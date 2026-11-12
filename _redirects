@@ -1,0 +1,2 @@
+# Qualquer endereço que não seja um arquivo do app volta para o app (nada de página 404 do Netlify).
+/*    /index.html   200

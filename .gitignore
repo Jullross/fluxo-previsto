@@ -1,0 +1,8 @@
+# Nunca vão para o GitHub
+.env
+.env.*
+*.zip
+node_modules/
+supabase/.temp/
+supabase/.branches/
+.DS_Store

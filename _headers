@@ -1,0 +1,11 @@
+# Cabeçalhos de segurança aplicados pelo Netlify em todas as páginas
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# O service worker precisa ser sempre buscado de novo para as atualizações chegarem
+/sw.js
+  Cache-Control: no-cache

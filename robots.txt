@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /$
+Allow: /privacidade.html
+Allow: /termos.html
+Disallow: /sw.js
+
+Sitemap: https://fluxo-previsto.netlify.app/sitemap.xml
