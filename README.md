@@ -25,7 +25,7 @@
 | Dívidas | Cadastro, conselheiro e simulação de quitação |
 | Desafio do mês | Meta de economia Leve, Ideal ou Hardcore, recalculada pela renda |
 | Cartões de família | Gasto de outra pessoa no seu cartão vira reembolso previsto |
-| Importação | CSV, OFX e PDF (lido por IA), com conciliação e aviso de duplicidade |
+| Importação | CSV, OFX, PDF e prints em JPG ou PNG (lidos por IA), com conciliação e aviso de duplicidade |
 | Open Finance | Sincronização pelo Meu Pluggy |
 | Conforto | Tema claro e escuro, modo privacidade, 5 telas com gesto no celular, funciona offline |
 
@@ -33,7 +33,7 @@
 
 ## Tecnologias
 
-HTML, CSS e JavaScript puro num único `index.html` (sem build) · Tailwind 3.4 · Supabase (Auth, Postgres com RLS, Realtime, Edge Functions em Deno) · jsPDF · Pluggy (Open Finance) · Google Gemini (leitura de PDF) · Netlify · PWA com service worker.
+HTML, CSS e JavaScript puro num único `index.html` (sem build) · Tailwind 3.4 · Supabase (Auth, Postgres com RLS, Realtime, Edge Functions em Deno) · jsPDF · Pluggy (Open Finance) · Google Gemini (leitura de PDF e prints) · Netlify · PWA com service worker.
 
 ## Documentação
 

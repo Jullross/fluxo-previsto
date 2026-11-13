@@ -31,7 +31,7 @@ Abas de Lançamentos, Calendário, Dívidas e Desafio no topo; abaixo, o painel 
 ## Importar uma fatura ou extrato
 
 1. Bancos → Importar.
-2. Escolha a conta ou o cartão e o arquivo (CSV, OFX ou PDF).
+2. Escolha a conta ou o cartão e o arquivo: CSV, OFX, PDF ou prints da tela do banco em JPG ou PNG. Dá para mandar até 8 prints de uma vez quando a fatura ocupa várias telas.
 3. Revise: desmarque o que não é seu, troque o bloco, escolha quem usou o cartão e decida o que fazer com o que "parece já lançado".
 4. Importe. O que já estava previsto é marcado como pago, sem duplicar.
 

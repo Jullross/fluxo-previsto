@@ -22,7 +22,7 @@ Cada pessoa só consegue ler e alterar a própria linha do banco, e nenhum segre
 - [Política de Privacidade](../privacidade.html) e [Termos de Uso](../termos.html) publicados e linkados na tela de entrada.
 - Dados coletados: nome, e-mail e o que a pessoa cadastra. Sem venda de dados, sem anúncios, sem rastreadores.
 - Apagar a conta apaga a linha junto (`on delete cascade`).
-- A leitura de PDF usa o Gemini no plano gratuito, em que o Google pode usar o conteúdo para melhorar os produtos. Por isso a função é restrita e o aviso está na política.
+- A leitura de PDF e de prints usa o Gemini no plano gratuito, em que o Google pode usar o conteúdo para melhorar os produtos. Por isso a função é restrita à dona do app: nenhum dado de outra pessoa passa pelo Gemini.
 
 ## O que nunca vai para o repositório
 

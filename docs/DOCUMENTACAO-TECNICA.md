@@ -13,7 +13,7 @@ O app inteiro roda no navegador, num único `index.html` em JavaScript puro, sem
 | Login, banco e tempo real | Supabase JS | 2.45.4 |
 | Funções no servidor | Supabase Edge Functions (Deno, TypeScript) | — |
 | Open Finance | Pluggy API (Meu Pluggy) | transações v2 |
-| Leitura de PDF | Google Gemini | modelos flash |
+| Leitura de PDF e prints | Google Gemini | modelos flash |
 | Hospedagem | Netlify | — |
 | App instalável | Manifest + service worker | cache v17 |
 
@@ -44,8 +44,8 @@ O app inteiro roda no navegador, num único `index.html` em JavaScript puro, sem
 
 ## Importação e conciliação
 
-1. **Enviar:** CSV (detecta separador, colunas e formato de número), OFX ou PDF.
-2. **Ler:** o PDF vai para a função `pdf-import`, que devolve data, descrição, valor, bloco, parcela, fechamento, vencimento e total.
+1. **Enviar:** CSV (detecta separador, colunas e formato de número), OFX, PDF ou até 8 prints (JPG, PNG, WebP, HEIC). Prints com mais de 1,2 MB são reduzidos no aparelho para JPEG de até 1400 px de largura.
+2. **Ler:** o PDF ou os prints vão para a função `pdf-import`, que trata vários prints como partes do mesmo documento (sem repetir o que aparece em dois) e converte "Hoje" e "Ontem" em datas. Ela devolve data, descrição, valor, bloco, parcela, fechamento, vencimento e total.
 3. **Revisar:** cada linha é comparada com o que estava previsto e não pago (mesmo valor, até 5 dias de diferença) para conciliar. Se já existe algo pago com valor quase igual (1% ou R$ 0,50) até 3 dias de distância, aparece "parece já lançado", com a opção de mesclar. O pagamento da própria fatura é ignorado.
 4. Cada linha importada ganha uma chave (`importKey`); importar o mesmo arquivo de novo não duplica.
 
@@ -54,7 +54,7 @@ O app inteiro roda no navegador, num único `index.html` em JavaScript puro, sem
 | Função | Entrada | Saída |
 | --- | --- | --- |
 | `open-finance` | Token de login; ação `ping`, `accounts` ou `transactions` com período | Contas e transações das conexões do Meu Pluggy |
-| `pdf-import` | Token de login; PDF em base64 (até cerca de 10 MB) | JSON com banco, tipo, fechamento, vencimento, total e transações |
+| `pdf-import` | Token de login; `files` = lista de `{data, mime}` em base64 (1 PDF ou até 8 imagens, cerca de 10 MB no total); o formato antigo `pdf` continua aceito | JSON com banco, tipo, fechamento, vencimento, total e transações |
 
 As duas exigem login válido e respondem só ao usuário definido no segredo `OWNER_ID`.
 

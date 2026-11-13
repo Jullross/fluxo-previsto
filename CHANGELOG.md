@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v18 | 13/11/2026 | A IA lê prints em JPG e PNG (até 8 de uma vez), além de PDF |
 | v17 | 11/11/2026 | Login novo: cabe na tela do celular, abas Entrar e Criar conta, "Esqueci minha senha" como link |
 | v16 | 11/11/2026 | Movimento suave em todo clique; importação de faturas em 3 etapas com resumo, barras por bloco e tabela nova; celular minimalista |
 | v15 | 11/11/2026 | Início estilo app de banco, resumo ao vivo no Gastei, parcelas e blocos em botões, gesto que acompanha o dedo |

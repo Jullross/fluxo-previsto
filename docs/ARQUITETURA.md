@@ -22,7 +22,7 @@ flowchart LR
   APP -->|só a dona| EF
   AUTH --> GOO["Google OAuth"]
   EF --> PLU["Pluggy · Open Finance"]
-  EF --> GEM["Gemini · lê PDF"]
+  EF --> GEM["Gemini · lê PDF e prints"]
 ```
 
 O Netlify entrega os arquivos; o navegador faz login, lê e grava a linha da pessoa e recebe avisos de mudança de outros aparelhos. Pluggy e Gemini só são chamados de dentro das Edge Functions, e só para a conta da dona.

@@ -1194,7 +1194,7 @@ body:not(.locked) #auth{display:none!important}
 <div class="overlay" id="m-import" hidden>
   <div class="sheet wide flex flex-col gap-4">
     <div class="flex items-center justify-between">
-      <div class="flex flex-col gap-1"><span class="label">Importar extrato ou fatura</span><h3 class="disp text-2xl font-bold" id="i-title">Escolha o arquivo</h3><span class="sub">CSV, OFX ou PDF. Nada entra no app antes de você revisar.</span></div>
+      <div class="flex flex-col gap-1"><span class="label">Importar extrato ou fatura</span><h3 class="disp text-2xl font-bold" id="i-title">Escolha o arquivo</h3><span class="sub">CSV, OFX, PDF ou prints (JPG, PNG). Nada entra no app antes de você revisar.</span></div>
       <button type="button" class="btn btn-ghost" data-close aria-label="Fechar"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="isteps" id="i-steps" aria-label="Etapas">
@@ -1212,7 +1212,7 @@ body:not(.locked) #auth{display:none!important}
       <svg class="ico" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--accent)"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg>
       <div style="font-weight:700;font-size:16px" id="i-drop-title">Solte aqui o arquivo .csv ou .ofx</div>
       <div class="sub" id="i-drop-sub">Funciona com extratos e faturas de Nubank, Itaú, Inter, Santander e outros que exportam CSV ou OFX.</div>
-      <label class="btn btn-primary"><input type="file" id="i-file" accept=".csv,.ofx,.txt,text/csv,.pdf,application/pdf" style="position:absolute;opacity:0;width:1px;height:1px">Escolher arquivo</label>
+      <label class="btn btn-primary"><input type="file" id="i-file" multiple accept=".csv,.ofx,.txt,text/csv,.pdf,application/pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" style="position:absolute;opacity:0;width:1px;height:1px">Escolher arquivo</label>
     </div>
     <div class="sub flex items-center gap-2"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4"/></svg>O arquivo é lido só para montar a revisão abaixo.</div>
     </div></div>
@@ -2784,13 +2784,17 @@ $('#i-add-person').onclick=()=>{ const v=$('#i-person').value.trim(); if(!v) ret
 const drop=$('#i-drop');
 ['dragenter','dragover'].forEach(t=>drop.addEventListener(t,ev=>{ev.preventDefault();drop.classList.add('over');}));
 ['dragleave','drop'].forEach(t=>drop.addEventListener(t,ev=>{ev.preventDefault();drop.classList.remove('over');}));
-drop.addEventListener('drop',ev=>{ const f=ev.dataTransfer.files[0]; if (f) readImport(f); });
-$('#i-file').onchange=ev=>{ const f=ev.target.files[0]; if (f) readImport(f); };
+drop.addEventListener('drop',ev=>{ const fs=[...ev.dataTransfer.files]; if (fs.length) readImport(fs); });
+$('#i-file').onchange=ev=>{ const fs=[...ev.target.files]; if (fs.length) readImport(fs); };
 function decodeBuf(buf){ try { return new TextDecoder('utf-8',{fatal:true}).decode(buf); } catch(e){ return new TextDecoder('windows-1252').decode(buf); } }
 function isPdf(f){ return /pdf$/i.test(f.type||'') || /\.pdf$/i.test(f.name||''); }
-function readImport(f){
+function isImg(f){ return /^image\/(jpeg|png|webp|heic|heif)$/i.test(f.type||'') || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name||''); }
+function readImport(files){
+  files=[].concat(files);
   setIStep(2);
-  if (isPdf(f)) return readPdfAI(f);
+  const ai=files.filter(x=>isPdf(x)||isImg(x));
+  if (ai.length) return readPdfAI(ai);
+  const f=files[0];
   const rd=new FileReader();
   rd.onload=()=>{ const txt=decodeBuf(rd.result); IM.file=f.name;
     const raw = /<OFX>|<STMTTRN>/i.test(txt) ? parseOFX(txt) : parseCSV(txt);
@@ -2943,19 +2947,46 @@ const PDFI = {
 };
 function updatePdfUI(){
   const t=$('#i-drop-title'), sub=$('#i-drop-sub'); if (!t) return;
-  if (PDFI.enabled){ t.textContent='Solte aqui o arquivo .csv, .ofx ou .pdf'; sub.textContent='CSV e OFX são lidos no seu aparelho. PDF de fatura ou extrato (inclusive escaneado) é lido pela IA do Gemini.'; }
+  if (PDFI.enabled){ t.textContent='Solte aqui o arquivo .csv, .ofx, .pdf ou os prints'; sub.textContent='CSV e OFX são lidos no seu aparelho. PDF e prints em JPG ou PNG (até 8 de uma vez, da mesma fatura ou extrato) são lidos pela IA do Gemini.'; }
   else { t.textContent='Solte aqui o arquivo .csv ou .ofx'; sub.textContent='Funciona com extratos e faturas de Nubank, Itaú, Inter, Santander e outros que exportam CSV ou OFX.'; }
 }
 function fileToB64(f){ return new Promise((ok,fail)=>{ const rd=new FileReader(); rd.onload=()=>ok(String(rd.result).split(',')[1]||''); rd.onerror=()=>fail(rd.error); rd.readAsDataURL(f); }); }
-async function readPdfAI(f){
-  const box=$('#i-preview');
-  if (!PDFI.enabled){ box.innerHTML='<div class="hint c-out">A leitura de PDF não está disponível nesta conta. Use o arquivo CSV ou OFX do seu banco.</div>'; return; }
-  if (!PDFI.configured){ box.innerHTML='<div class="hint c-out">Falta cadastrar a chave do Gemini no Supabase (segredo GEMINI_API_KEY).</div>'; return; }
-  if (f.size > 10*1024*1024){ box.innerHTML='<div class="hint c-out">Este PDF passa de 10 MB. Tente exportar só a fatura do mês.</div>'; return; }
-  box.innerHTML=`<div class="hint" style="display:flex;gap:10px;align-items:center">${ic('loader')} Lendo “${esc(f.name)}” com IA. Costuma levar de 15 a 60 segundos…</div>`;
+function fileMime(f){
+  if (isPdf(f)) return 'application/pdf';
+  const t=(f.type||'').toLowerCase(); if (/^image\//.test(t)) return t==='image/jpg'?'image/jpeg':t;
+  const ext=(f.name||'').toLowerCase().split('.').pop(); return ext==='png'?'image/png':ext==='webp'?'image/webp':ext==='heic'?'image/heic':ext==='heif'?'image/heif':'image/jpeg';
+}
+// Prints grandes viram JPEG com até 1400 px de largura (a altura de print rolado é mantida), para caber no limite e gastar menos do Gemini.
+async function shrinkImage(f){
+  const mime=fileMime(f);
+  if (!/^image\/(jpeg|png|webp)$/.test(mime) || f.size<1.2*1024*1024) return {data:await fileToB64(f), mime};
   try {
-    const pdf = await fileToB64(f);
-    const {data, error} = await sb.functions.invoke('pdf-import', {body:{action:'read', pdf}});
+    const bmp=await createImageBitmap(f);
+    const k=Math.min(1, 1400/bmp.width, 12000/bmp.height);
+    const c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k);
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(bmp,0,0,c.width,c.height);
+    const url=c.toDataURL('image/jpeg',.86); return {data:url.split(',')[1]||'', mime:'image/jpeg'};
+  } catch(e){ return {data:await fileToB64(f), mime}; }
+}
+async function readPdfAI(files){
+  files=[].concat(files);
+  const box=$('#i-preview'), f=files[0];
+  const imgs=files.filter(isImg), pdfs=files.filter(isPdf);
+  const what = imgs.length ? (imgs.length>1?imgs.length+' prints':'o print') : 'o PDF';
+  if (!PDFI.enabled){ setIStep(1); box.innerHTML='<div class="hint c-out">A leitura de PDF e de prints não está disponível nesta conta. Use o arquivo CSV ou OFX do seu banco.</div>'; return; }
+  if (!PDFI.configured){ setIStep(1); box.innerHTML='<div class="hint c-out">Falta cadastrar a chave do Gemini no Supabase (segredo GEMINI_API_KEY).</div>'; return; }
+  if (pdfs.length && imgs.length){ setIStep(1); box.innerHTML='<div class="hint c-out">Envie o PDF sozinho, ou só os prints. Os dois juntos não dá.</div>'; return; }
+  if (pdfs.length>1){ setIStep(1); box.innerHTML='<div class="hint c-out">Envie um PDF por vez.</div>'; return; }
+  if (imgs.length>8){ setIStep(1); box.innerHTML='<div class="hint c-out">São até 8 prints por vez. Divida em duas importações.</div>'; return; }
+  if (pdfs.length && f.size > 10*1024*1024){ setIStep(1); box.innerHTML='<div class="hint c-out">Este PDF passa de 10 MB. Tente exportar só a fatura do mês.</div>'; return; }
+  const label = files.length>1 ? files.length+' prints' : '“'+esc(f.name)+'”';
+  box.innerHTML=`<div class="hint" style="display:flex;gap:10px;align-items:center">${ic('loader')} Lendo ${label} com IA. Costuma levar de 15 a 60 segundos…</div>`;
+  try {
+    const parts = pdfs.length ? [{data:await fileToB64(f), mime:'application/pdf'}] : await Promise.all(imgs.map(shrinkImage));
+    if (parts.reduce((s,x)=>s+x.data.length,0) > 14000000) throw {code:'too_large'};
+    const body = {action:'read', files:parts};
+    if (pdfs.length) body.pdf = parts[0].data; // compatível com a função antiga
+    const {data, error} = await sb.functions.invoke('pdf-import', {body});
     if (error){ let code=null; try { code=(await error.context.json()).error; } catch(e) {} throw {code}; }
     const d=data.data||{}, a=accById(IM.accId);
     IM.meta={fechamento:d.fechamento||null, vencimento:d.vencimento||null, total:d.total!=null?+d.total:null, banco:d.banco||''};
@@ -2969,8 +3000,8 @@ async function readPdfAI(f){
       const desc=String(t.descricao||'').trim()+(t.parcela?` (${t.parcela})`:'');
       return {date:String(t.data).slice(0,10), desc, amount: out?-v:v, kind: out?'out':'in', cat: out ? (t.categoria || (t.parcela?'futuro':null)) : null, payment: !!t.pagamento_fatura};
     }).filter(r=>r.amount);
-    if (!raw.length){ setIStep(1); box.innerHTML=`<div class="hint c-out">A IA não encontrou lançamentos em “${esc(f.name)}”. Confira se é uma fatura ou um extrato.</div>`; return; }
-    IM.file = `${f.name} · lido pela IA${d.banco?' ('+d.banco+')':''}`; IM.raw=raw;
+    if (!raw.length){ setIStep(1); box.innerHTML=`<div class="hint c-out">A IA não encontrou lançamentos em ${label}. Confira se ${what} mostra uma fatura ou um extrato, com datas e valores legíveis.</div>`; return; }
+    IM.file = `${files.length>1?files.length+' prints':f.name} · lido pela IA${d.banco?' ('+d.banco+')':''}`; IM.raw=raw;
     buildRows(raw);
     if (d.total!=null && a && a.kind==='card'){
       const out=raw.filter(r=>r.kind==='out').reduce((s,r)=>s+Math.abs(r.amount),0), back=raw.filter(r=>r.kind==='in'&&!r.payment).reduce((s,r)=>s+r.amount,0);
@@ -2979,10 +3010,12 @@ async function readPdfAI(f){
   } catch(e){
     const msg = e.code==='rate_limited' ? 'O limite gratuito do Gemini foi atingido por agora. Tente de novo em alguns minutos.'
       : e.code==='bad_key' ? 'O Gemini recusou a chave. Confira o segredo GEMINI_API_KEY no Supabase.'
-      : e.code==='too_large' ? 'Este PDF é grande demais. Tente exportar só a fatura do mês.'
+      : e.code==='too_large' ? (imgs.length?'Os prints passam do limite de tamanho. Envie menos de uma vez.':'Este PDF é grande demais. Tente exportar só a fatura do mês.')
+      : e.code==='bad_type' ? 'A leitura por IA ainda não aceita prints nesta conta. Publique a função pdf-import atualizada no Supabase.'
+      : e.code==='too_many' ? 'São até 8 prints por vez. Divida em duas importações.'
       : e.code==='not_configured' ? 'Falta cadastrar a chave do Gemini no Supabase (segredo GEMINI_API_KEY).'
-      : 'Não deu para ler este PDF agora. Tente de novo ou use o CSV/OFX do banco.';
-    box.innerHTML=`<div class="hint c-out">${esc(msg)}</div>`;
+      : `Não deu para ler ${what} agora. Tente de novo ou use o CSV/OFX do banco.`;
+    setIStep(1); box.innerHTML=`<div class="hint c-out">${esc(msg)}</div>`;
   }
 }
 

@@ -1,4 +1,4 @@
-// Leitura de faturas e extratos em PDF com o Gemini (plano gratuito), só para a dona do app.
+// Leitura de faturas e extratos em PDF ou em prints (JPG, PNG, WebP, HEIC) com o Gemini (plano gratuito), só para a dona do app.
 // A chave fica no segredo GEMINI_API_KEY do Supabase e nunca vai para o navegador.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -8,7 +8,10 @@ const OWNER_ID = (Deno.env.get("OWNER_ID") ?? "").trim();
 const ALLOWED = ["https://fluxo-previsto.netlify.app", "http://localhost:8000", "http://127.0.0.1:8000"];
 // Primeiro o modelo mais leve; se a leitura falhar ou vier vazia, tenta o mais capaz.
 const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
-const MAX_B64 = 14_000_000; // cerca de 10 MB de PDF
+const MAX_B64 = 14_000_000; // cerca de 10 MB somando todos os arquivos
+const MAX_FILES = 8;       // prints de várias telas da mesma fatura
+const MIMES = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+type Part = { data: string; mime: string };
 
 function cors(req: Request) {
   const origin = req.headers.get("origin") ?? "";
@@ -23,7 +26,8 @@ const json = (req: Request, status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json" } });
 
 const PROMPT = `Você é um leitor de faturas de cartão de crédito e extratos bancários brasileiros.
-O PDF anexo é uma fatura ou um extrato. Extraia TODOS os lançamentos.
+O anexo é uma fatura ou um extrato: um PDF ou um ou mais prints (capturas de tela do app ou do site do banco, ou fotos do papel). Extraia TODOS os lançamentos.
+Quando houver vários prints, eles são partes do mesmo documento, em sequência: um lançamento que aparece em dois prints (por causa da rolagem) entra uma vez só.
 
 Responda somente com um objeto JSON neste formato:
 {"banco": string, "tipo": "fatura"|"extrato", "fechamento": "AAAA-MM-DD"|null, "vencimento": "AAAA-MM-DD"|null, "total": number|null,
@@ -32,6 +36,8 @@ Responda somente com um objeto JSON neste formato:
 Regras:
 - valor sempre positivo; "tipo" diz se o dinheiro saiu ou entrou. Estornos, créditos e salários são "entrada".
 - Se a data vier sem ano, deduza pelo período do documento (uma fatura de janeiro pode ter compras de dezembro do ano anterior).
+- Prints de app costumam dizer "Hoje", "Ontem" ou só o dia da semana: converta para a data real usando a data de hoje informada no fim.
+- Ignore botões, menus, barras do celular (hora, bateria) e textos de propaganda que aparecem no print.
 - "descricao": nome limpo e legível do estabelecimento (sem códigos, asteriscos ou números de terminal).
 - "parcela": preencha quando aparecer algo como "PARC 03/10" ou "2/6". Compras parceladas vão em "futuro".
 - "categoria" (somente para saídas; para entradas use null):
@@ -42,13 +48,17 @@ Regras:
 - "pagamento_fatura": true só para o pagamento da própria fatura anterior.
 - Não invente lançamentos. Ignore linhas de saldo, limite, juros informativos e propaganda.`;
 
-async function askGemini(model: string, key: string, pdfB64: string) {
+async function askGemini(model: string, key: string, files: Part[]) {
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const r = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ inline_data: { mime_type: "application/pdf", data: pdfB64 } }, { text: PROMPT }] }],
+      contents: [{ role: "user", parts: [
+        ...files.map((f) => ({ inline_data: { mime_type: f.mime, data: f.data } })),
+        { text: `${PROMPT}\n\nData de hoje: ${today}.` },
+      ] }],
       generationConfig: { responseMimeType: "application/json", temperature: 0 },
     }),
   });
@@ -74,20 +84,25 @@ Deno.serve(async (req) => {
   const { data: { user } } = await sb.auth.getUser(token);
   if (!OWNER_ID || !user || user.id !== OWNER_ID) return json(req, 403, { error: "forbidden" });
 
-  let body: { action?: string; pdf?: string } = {};
+  let body: { action?: string; pdf?: string; files?: { data?: string; mime?: string }[] } = {};
   try { body = await req.json(); } catch { /* corpo vazio */ }
   const key = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"'`]/g, "");
 
-  if (body.action === "ping") return json(req, 200, { enabled: true, configured: !!key });
+  if (body.action === "ping") return json(req, 200, { enabled: true, configured: !!key, images: true });
   if (!key) return json(req, 409, { error: "not_configured" });
-  const pdf = String(body.pdf ?? "");
-  if (!pdf) return json(req, 400, { error: "no_file" });
-  if (pdf.length > MAX_B64) return json(req, 413, { error: "too_large" });
+  // Formato novo: files = [{data, mime}]. O antigo (pdf = base64) continua aceito.
+  const files: Part[] = Array.isArray(body.files)
+    ? body.files.map((f) => ({ data: String(f?.data ?? ""), mime: String(f?.mime ?? "").toLowerCase() })).filter((f) => f.data)
+    : body.pdf ? [{ data: String(body.pdf), mime: "application/pdf" }] : [];
+  if (!files.length) return json(req, 400, { error: "no_file" });
+  if (files.length > MAX_FILES) return json(req, 413, { error: "too_many" });
+  if (files.some((f) => !MIMES.includes(f.mime))) return json(req, 415, { error: "bad_type" });
+  if (files.reduce((s, f) => s + f.data.length, 0) > MAX_B64) return json(req, 413, { error: "too_large" });
 
   let last = "";
   for (const model of MODELS) {
     try {
-      const data = await askGemini(model, key, pdf);
+      const data = await askGemini(model, key, files);
       if (data.transacoes.length === 0 && model !== MODELS[MODELS.length - 1]) { last = "vazio"; continue; }
       return json(req, 200, { model, data });
     } catch (e) {
