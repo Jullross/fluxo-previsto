@@ -3011,7 +3011,7 @@ async function readPdfAI(files){
     const msg = e.code==='rate_limited' ? 'O limite gratuito do Gemini foi atingido por agora. Tente de novo em alguns minutos.'
       : e.code==='bad_key' ? 'O Gemini recusou a chave. Confira o segredo GEMINI_API_KEY no Supabase.'
       : e.code==='too_large' ? (imgs.length?'Os prints passam do limite de tamanho. Envie menos de uma vez.':'Este PDF é grande demais. Tente exportar só a fatura do mês.')
-      : e.code==='bad_type' ? 'A leitura por IA ainda não aceita prints nesta conta. Publique a função pdf-import atualizada no Supabase.'
+      : (e.code==='bad_type' || (e.code==='no_file' && imgs.length)) ? 'A função pdf-import no Supabase ainda é a versão antiga, que só lê PDF. Publique a versão nova da função para ler prints.'
       : e.code==='too_many' ? 'São até 8 prints por vez. Divida em duas importações.'
       : e.code==='not_configured' ? 'Falta cadastrar a chave do Gemini no Supabase (segredo GEMINI_API_KEY).'
       : `Não deu para ler ${what} agora. Tente de novo ou use o CSV/OFX do banco.`;
