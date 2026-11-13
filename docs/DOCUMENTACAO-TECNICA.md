@@ -26,6 +26,8 @@ O app inteiro roda no navegador, num único `index.html` em JavaScript puro, sem
 | Estado `S` | Todos os dados da pessoa; salvo no aparelho e na nuvem |
 | `occurrences(m)` | O que cai num mês: únicos, recorrentes, parcelas, dívidas simuladas, desafio e reembolsos |
 | `project()` | O motor: meses com dias, totais por bloco e saldo final em cascata |
+| `fatEntries()`, `fatInfo()` | Faturas de cartão: baixa total ou parcial, parte que vai para o mês seguinte e saldo anterior em aberto |
+| `transfersIn()`, `xferPairs()` | Transferências entre contas próprias e sugestão de juntar saída e entrada iguais |
 | `health()` | Termômetro: nível, teto seguro por dia, menor saldo à frente, plano de caixa |
 | Telas | `renderHero`, `renderMHome`, `renderMonth`, `renderCal`, `renderDebts`, `renderChallenge`, `renderChart`, `renderSim` |
 | Importação `IM` | `parseCSV`, `parseOFX`, `readPdfAI`, `buildRows`, `renderPreview`, `doImport` |
@@ -41,12 +43,15 @@ O app inteiro roda no navegador, num único `index.html` em JavaScript puro, sem
 4. Cada lançamento cai no dia ajustado por `resolveDay()`: dia fixo, 5º dia útil, 5º dia útil CLT, último dia útil, ou antecipar/adiar em feriado e fim de semana.
 5. "Tenho hoje" conta só o que já foi marcado como pago ou recebido.
 6. O teto seguro por dia é o menor entre: o que dá para gastar até o próximo recebimento e o que dá até o fim do mês sem nenhum dia ficar negativo.
+7. **Transferências** (`kind: "transfer"`) ficam fora de `occurrences()`: não entram em entradas, saídas, blocos nem no teto. Aparecem na lista e no calendário com ⇄.
+8. **Pendente × pago:** o que está pendente continua descontando da sobra prevista; "Já saiu" soma só o que está pago.
+9. **Faturas:** as compras no cartão já caem no dia de vencimento. Sem registro em `faturas`, cada compra segue o próprio pago/pendente. Ao dar baixa parcial (ou "não paguei"), o motor cria duas linhas automáticas: no mês, um ajuste negativo com o que não foi pago; no mês seguinte, o "saldo em aberto da fatura anterior" (com juros, se informados). As duas ficam fora dos blocos 50/30/20. O pagamento da fatura nunca vira uma saída a mais: as compras de dentro dela já são a saída.
 
 ## Importação e conciliação
 
 1. **Enviar:** CSV (detecta separador, colunas e formato de número), OFX, PDF ou até 8 prints (JPG, PNG, WebP, HEIC). Prints com mais de 1,2 MB são reduzidos no aparelho para JPEG de até 1400 px de largura.
 2. **Ler:** o PDF ou os prints vão para a função `pdf-import`, que trata vários prints como partes do mesmo documento (sem repetir o que aparece em dois) e converte "Hoje" e "Ontem" em datas. Ela devolve data, descrição, valor, bloco, parcela, fechamento, vencimento e total.
-3. **Revisar:** cada linha é comparada com o que estava previsto e não pago (mesmo valor, até 5 dias de diferença) para conciliar. Se já existe algo pago com valor quase igual (1% ou R$ 0,50) até 3 dias de distância, aparece "parece já lançado", com a opção de mesclar. O pagamento da própria fatura é ignorado.
+3. **Revisar:** cada linha é comparada com o que estava previsto e não pago (mesmo valor, até 5 dias de diferença) para conciliar. Se já existe algo pago com valor quase igual (1% ou R$ 0,50) até 3 dias de distância, aparece "parece já lançado", com a opção de mesclar. O "Pagamento recebido" da fatura dá baixa na fatura anterior (total ou parcial, e o resto vai para o mês seguinte). No extrato da conta, o pagamento de uma fatura (pela descrição ou pelo valor igual ao total) também vira baixa, não saída nova. Uma saída e uma entrada de mesmo valor entre duas contas suas, até 2 dias de diferença, vira transferência.
 4. Cada linha importada ganha uma chave (`importKey`); importar o mesmo arquivo de novo não duplica.
 
 ## Funções no servidor

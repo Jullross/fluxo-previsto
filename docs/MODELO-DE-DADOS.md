@@ -22,6 +22,8 @@ RLS ligado, com 4 políticas (lê, cria, atualiza, apaga), todas com `auth.uid()
 | `debts[]` | `name`, `creditor`, `original`, `current`, `cashOffer`, `instN`, `instAmount`, `simulate`, `simMode`, `simMonth` |
 | `status` | Mapa `"<id>|AAAA-MM": true` = pago ou recebido naquele mês |
 | `challenge` | `mode` padrão e `months` por mês: modo, `total` e `deposits` |
+| `faturas` | Mapa `"<id do cartão>|AAAA-MM"`: `{paid, juros, from, src, was}` = baixa da fatura daquele mês (valor pago, juros do rotativo em %, conta que pagou, origem manual ou importação, status de antes para desfazer) |
+| `notXfer` | Pares que você disse que não são transferência |
 | `imported` | Chaves das linhas já importadas |
 | `example` | `true` enquanto a conta mostra os dados de exemplo |
 
@@ -29,7 +31,8 @@ RLS ligado, com 4 políticas (lê, cria, atualiza, apaga), todas com `auth.uid()
 
 | Campo | Para que serve |
 | --- | --- |
-| `id`, `kind` | Identificador e tipo: `in` ou `out` |
+| `id`, `kind` | Identificador e tipo: `in`, `out` ou `transfer` |
+| `fromId`, `toId` | Transferências: conta de origem e de destino |
 | `type` | `single`, `recurring` ou `installment` |
 | `name`, `cat` | Nome e bloco: `essencial`, `estilo`, `futuro` ou `metas` |
 | `start`, `end` | Primeiro e último mês (`end` vazio = sem fim) |

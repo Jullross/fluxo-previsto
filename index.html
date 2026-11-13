@@ -271,6 +271,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tag.adj.mv{color:var(--care-text);border-color:color-mix(in srgb,var(--care) 45%,var(--line));background:color-mix(in srgb,var(--care) 8%,transparent)}
 .day.hol{border-style:dashed;border-color:color-mix(in srgb,var(--care) 55%,var(--line))}
 .hol-pill{align-self:flex-start;max-width:100%;font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;background:color-mix(in srgb,var(--care) 15%,transparent);color:var(--care-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.link-btn{background:none;border:0;padding:0;font:inherit;cursor:pointer;text-align:left}
+.tag.pend{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line));border-style:dashed}
+.tag.xfer{color:var(--cal-bal);border-color:color-mix(in srgb,var(--cal-bal) 45%,var(--line))}
+.tag.fatt{color:var(--muted)}
+.seg.kind button.on[data-v="transfer"]{color:var(--cal-bal)}
+.seg.st button.on[data-v="pend"]{color:var(--warn)} .seg.st button.on[data-v="paid"]{color:var(--in)}
+.lf-seg{display:flex;background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;padding:4px;gap:4px;overflow-x:auto;scrollbar-width:none}
+.lf-seg button{flex:1 1 0;border:0;background:transparent;border-radius:9px;padding:8px 10px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.lf-seg button.on{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
+.xsug{border:1px solid color-mix(in srgb,var(--cal-bal) 50%,var(--line));background:color-mix(in srgb,var(--cal-bal) 7%,var(--surface));border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.fat-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
+.fatc{display:flex;flex-direction:column;gap:10px}
+.fatc .ln{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}
+.fatc .ln span:last-child{font-family:var(--f-num);white-space:nowrap}
+.fatc .lines{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:8px}
+.fatc .carry{background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn);border-radius:8px;padding:5px 8px;margin:0 -8px}
+.fatc .tot{border-top:1px solid var(--line);padding-top:8px;font-weight:700}
+.item.fat-head{cursor:pointer}
+.item.fat-head .chev{transition:transform .3s var(--ease,ease);color:var(--faint)}
+.item.fat-head.open .chev{transform:rotate(180deg)}
+.item.sub-it{background:var(--bg);padding-left:24px}
+.item.adj .amt{color:var(--muted)}
+.xfer-ic{flex:0 0 auto;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,var(--cal-bal) 14%,var(--surface));color:var(--cal-bal)}
 .tag.vault{color:var(--c-met);border-color:color-mix(in srgb,var(--c-met) 45%,var(--line))}
 .only-sm{display:flex} .only-lg{display:none!important}
 @media (min-width:640px){.only-sm{display:none!important}.only-lg{display:flex!important}}
@@ -948,19 +971,28 @@ body:not(.locked) #auth{display:none!important}
     </div>
     <div class="tab-body" id="tab-body"><div class="tab-inner">
     <div id="view-lista" class="grid gap-4 md:grid-cols-2">
-      <div class="panel overflow-hidden">
+      <div class="lf-seg md:col-span-2" id="lf-seg" role="tablist" aria-label="Filtrar lançamentos"><button type="button" data-lf="all">Todos</button><button type="button" data-lf="conta">Conta/Pix/Débito</button><button type="button" data-lf="fat">Faturas de Cartão</button></div>
+      <div class="md:col-span-2" id="xfer-sug" hidden></div>
+      <div class="md:col-span-2 flex flex-col gap-3" id="fat-view" hidden></div>
+      <div class="panel overflow-hidden" id="lp-in">
         <div class="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
           <div><div class="label c-in">Entradas</div><div class="sub" id="in-sub"></div></div>
           <button class="btn btn-in" data-new="in"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Recebimento</button>
         </div>
         <div id="list-in" class="scroll-list" style="border-top:1px solid var(--line)"></div>
       </div>
-      <div class="panel overflow-hidden">
+      <div class="panel overflow-hidden" id="lp-out">
         <div class="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
           <div><div class="label c-out">Saídas</div><div class="sub" id="out-sub"></div></div>
           <button class="btn btn-out" data-new="out"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Gasto</button>
         </div>
         <div id="list-out" class="scroll-list" style="border-top:1px solid var(--line)"></div>
+      </div>
+      <div class="panel overflow-hidden md:col-span-2" id="lp-xfer" hidden>
+        <div class="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
+          <div><div class="label" style="color:var(--cal-bal)">Transferências entre suas contas</div><div class="sub" id="xfer-sub"></div></div>
+        </div>
+        <div id="list-xfer" style="border-top:1px solid var(--line)"></div>
       </div>
     </div>
 
@@ -1096,7 +1128,7 @@ body:not(.locked) #auth{display:none!important}
       <h3 class="disp text-xl font-bold" id="f-title">Novo lançamento</h3>
       <button type="button" class="btn btn-ghost" data-close aria-label="Fechar"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
-    <div class="seg kind" id="f-kind"><button type="button" data-v="in">Entrada</button><button type="button" data-v="out">Saída</button></div>
+    <div class="seg kind" id="f-kind"><button type="button" data-v="in">Entrada</button><button type="button" data-v="out">Saída</button><button type="button" data-v="transfer">Transferência</button></div>
     <div class="seg" id="f-type"><button type="button" data-v="recurring">Recorrente</button><button type="button" data-v="installment">Parcelado</button><button type="button" data-v="single">Único</button></div>
     <div class="hint" id="f-hint"></div>
     <label class="field"><span>Descrição</span><input class="inp" id="f-name" autocomplete="off" placeholder="Ex.: Salário, Internet, Celular novo"></label>
@@ -1108,7 +1140,10 @@ body:not(.locked) #auth{display:none!important}
       <label class="field" id="wrap-day"><span>Dia previsto</span><input class="inp num" id="f-day" type="number" min="1" max="31" value="5"></label>
       <label class="field" id="wrap-end"><span>Último mês (opcional)</span><input class="inp" id="f-end" type="month"></label>
       <label class="field" id="wrap-method"><span>Forma</span><select class="inp" id="f-method"><option>Cartão</option><option>Pix</option><option>Débito</option><option>Boleto</option><option>Dinheiro</option></select></label>
-      <label class="field col-span-2"><span>Banco ou cartão</span><select class="inp" id="f-acc"></select></label>
+      <label class="field col-span-2" id="wrap-acc"><span>Banco ou cartão</span><select class="inp" id="f-acc"></select></label>
+      <label class="field" id="wrap-from" hidden><span>Saiu de (conta origem)</span><select class="inp" id="f-from"></select></label>
+      <label class="field" id="wrap-to" hidden><span>Entrou em (conta destino)</span><select class="inp" id="f-to"></select></label>
+      <div class="sub col-span-2" id="f-fat-note" hidden></div>
       <label class="field col-span-2" id="wrap-rule"><span>Regra de dia útil / feriado</span><select class="inp" id="f-rule"></select></label>
       <label class="field" id="wrap-bdn"><span>Qual dia útil?</span><input class="inp num" id="f-bdn" type="number" min="1" max="20" value="5"></label>
       <div class="sub col-span-2" id="f-rule-prev"></div>
@@ -1124,6 +1159,11 @@ body:not(.locked) #auth{display:none!important}
       <div class="seg" id="f-scope"><button type="button" data-v="forward">Deste mês em diante</button><button type="button" data-v="all">Em todos os meses</button></div>
       <div class="sub" id="f-scope-note"></div>
     </div>
+    <div class="field" id="wrap-status">
+      <span id="f-status-label">Status</span>
+      <div class="seg st" id="f-status"><button type="button" data-v="pend">Pendente (não pago)</button><button type="button" data-v="paid">Pago</button></div>
+      <span class="sub" id="f-status-note" style="font-weight:400"></span>
+    </div>
     <div class="sub" id="f-preview"></div>
     <div class="c-out text-sm" id="f-error" hidden></div>
     <div class="flex flex-wrap gap-2 justify-between pt-1">
@@ -1133,6 +1173,26 @@ body:not(.locked) #auth{display:none!important}
   </form>
 </div>
 <datalist id="people"></datalist>
+
+<!-- Modal: pagar fatura -->
+<div class="overlay" id="m-fat" hidden>
+  <div class="sheet flex flex-col gap-4" style="max-width:520px">
+    <div class="flex items-center justify-between">
+      <h3 class="disp text-xl font-bold" id="pf-title">Pagar fatura</h3>
+      <button type="button" class="btn btn-ghost" data-close aria-label="Fechar"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div id="pf-sum"></div>
+    <div class="seg" id="pf-mode"><button type="button" data-v="total">Valor total</button><button type="button" data-v="part">Parcial</button><button type="button" data-v="none">Não paguei</button></div>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="field" id="pf-wrap-amt"><span>Quanto pagou</span><input class="inp num" id="pf-amt" inputmode="decimal" placeholder="0,00"></label>
+      <label class="field" id="pf-wrap-jur"><span>Juros do rotativo (% · opcional)</span><input class="inp num" id="pf-jur" inputmode="decimal" placeholder="0"></label>
+      <label class="field col-span-2" id="pf-wrap-from"><span>Pago com</span><select class="inp" id="pf-from"></select></label>
+    </div>
+    <div class="hint" id="pf-impact"></div>
+    <div class="c-out text-sm" id="pf-error" hidden></div>
+    <div class="flex gap-2 justify-end"><button type="button" class="btn" data-close>Cancelar</button><button type="button" class="btn btn-primary" id="pf-ok">Dar baixa</button></div>
+  </div>
+</div>
 
 <!-- Modal: dívida -->
 <div class="overlay" id="m-debt" hidden>
@@ -1457,13 +1517,13 @@ function migrate(d){
   d.version=3; d.settings.targets = {...DEFAULT_TARGETS, ...(d.settings.targets||{})};
   { const early = earliestStart(d.entries); if (early && early < d.settings.baseMonth) d.settings.baseMonth = early; }
   d.settings.targetMode = d.settings.targetMode==='auto' ? 'auto' : 'manual'; d.settings.accent = d.settings.accent || 'esmeralda';
-  d.accounts = d.accounts||[]; d.debts = d.debts||[];
+  d.accounts = d.accounts||[]; d.debts = d.debts||[]; d.faturas = d.faturas||{};
   for (const a of d.accounts) a.reviewed = a.reviewed||{};
   d.challenge = d.challenge || {mode:'ritmo', months:{}}; d.challenge.months = d.challenge.months||{};
   for (const e of d.entries) if (e.kind==='out' && !e.cat) e.cat=inferCat(e);
   return d;
 }
-function emptyState(){ return {version:3, example:false, settings:{baseMonth:CUR, initialBalance:0, targets:{...DEFAULT_TARGETS}, targetMode:'manual', accent:'esmeralda'}, accounts:[], entries:[], debts:[], status:{}, challenge:{mode:'ritmo', months:{}}}; }
+function emptyState(){ return {version:3, example:false, settings:{baseMonth:CUR, initialBalance:0, targets:{...DEFAULT_TARGETS}, targetMode:'manual', accent:'esmeralda'}, accounts:[], entries:[], debts:[], status:{}, faturas:{}, challenge:{mode:'ritmo', months:{}}}; }
 S = emptyState();
 let sel = CUR, tab = 'lista', selDay = TODAY, alertsOpen = false;
 function pref(k,v){ try{ if(v===undefined) return localStorage.getItem(KEY+':'+k); localStorage.setItem(KEY+':'+k,v); }catch(e){ return null; } }
@@ -1509,7 +1569,82 @@ function debtToEntry(d){
   return {...base, type:'single', amount:amt, start:m, day: m===CUR?TODAY:10};
 }
 const debtEntries = (exceptId) => (S.debts||[]).filter(d=>d.simulate && d.id!==exceptId).map(debtToEntry);
-const allEntries = () => [...S.entries, ...debtEntries(), ...vaultEntries()];
+const allEntries = () => [...S.entries, ...debtEntries(), ...vaultEntries(), ...fatEntries()];
+
+/* ---------- Faturas de cartão: baixa, pagamento parcial e saldo em aberto ---------- */
+// S.faturas["<cartão>|AAAA-MM"] = {paid, juros, from, src}. Sem registro, a fatura segue o pago/pendente de cada compra.
+// Com registro e pagamento menor que o total, o resto sai do mês (linha de ajuste) e entra no mês seguinte (saldo em aberto + juros).
+const isCardAcc = id => { const a=accById(id); return !!(a && a.kind==='card'); };
+const fatDue = (c,m) => Math.min(c.dueDay||10, daysIn(m));
+function fatEntries(){
+  const F=S.faturas||{}, out=[];
+  for (const c of (S.accounts||[]).filter(a=>a.kind==='card')){
+    const keys=Object.keys(F).filter(k=>k.startsWith(c.id+'|')).map(k=>k.slice(c.id.length+1)).sort();
+    if (!keys.length) continue;
+    const items=S.entries.filter(e=>e.kind==='out' && e.accountId===c.id);
+    let carry=0, m=keys[0], from=null; const last=keys[keys.length-1];
+    for (let g=0; g<240; g++){
+      const charges=r2(occurrences(m, items).reduce((a,o)=>a+o.amount,0)), total=r2(carry+charges), rec=F[c.id+'|'+m], due=fatDue(c,m);
+      if (carry>0.004) out.push({id:`fatc_${c.id}_${m}`, kind:'out', type:'single', start:m, day:due, amount:carry, fat:'carry', fatFrom:from, accountId:c.id, method:'Cartão', name:'Saldo em aberto da fatura de '+mLabel(from)});
+      let next=0;
+      if (rec && rec.paid < total-0.004){ const rem=r2(total-rec.paid);
+        out.push({id:`fata_${c.id}_${m}`, kind:'out', type:'single', start:m, day:due, amount:-rem, fat:'adj', accountId:c.id, method:'Cartão', name:'Parte da fatura que foi para '+mLabel(addM(m,1))});
+        next=r2(rem*(1+(Math.max(0,+rec.juros||0))/100)); }
+      carry=next; from=m;
+      if (m>=last && carry<=0.004) break;
+      m=addM(m,1);
+    }
+  }
+  return out;
+}
+function fatInfo(r, c){
+  const its=r.outs.filter(o=>o.e.accountId===c.id), sum=a=>r2(a.reduce((s,o)=>s+o.amount,0));
+  const real=its.filter(o=>!o.e.fat), carryO=its.find(o=>o.e.fat==='carry');
+  const carry=carryO?carryO.amount:0, avista=sum(real.filter(o=>o.e.type==='single')), parc=sum(real.filter(o=>o.e.type==='installment')), rec=sum(real.filter(o=>o.e.type==='recurring'));
+  const total=r2(carry+avista+parc+rec), recd=(S.faturas||{})[c.id+'|'+r.m];
+  let paid, state;
+  if (recd){ paid=r2(Math.min(recd.paid,total)); state = total<=0.004?'zero' : paid>=total-0.004?'paid' : paid>0?'part':'open'; }
+  else { const pend=its.filter(o=>!o.e.fat || o.e.fat==='carry'); paid=sum(pend.filter(o=>o.done)); state = total<=0.004?'zero' : pend.every(o=>o.done)?'paid':'pend'; }
+  const next = recd && state!=='paid' && state!=='zero' ? r2((total-paid)*(1+(Math.max(0,+recd.juros||0))/100)) : 0;
+  return {c, m:r.m, items:real, carryO, carry, carryFrom:carryO?carryO.e.fatFrom:null, avista, parc, rec, total, paid, state, next, recd, due:fatDue(c,r.m)};
+}
+function fatTotal(c, m){ const r=P.find(x=>x.m===m); return r ? fatInfo(r,c).total : 0; }
+function markFat(c, m, on){
+  for (const o of occurrences(m, allEntries()).filter(o=>o.e.accountId===c.id && o.e.fat!=='adj')){ const k=o.e.id+'|'+m; if (on) S.status[k]=true; else delete S.status[k]; }
+}
+function setFatPayment(c, m, paid, juros, from, src){
+  const old=(S.faturas||{})[c.id+'|'+m];
+  // guarda o pago/pendente de antes, para o "Desfazer baixa" devolver tudo como estava
+  const was = old ? (old.was||[]) : occurrences(m, allEntries()).filter(o=>o.e.accountId===c.id && o.e.fat!=='adj' && o.done).map(o=>o.e.id+'|'+m);
+  (S.faturas=S.faturas||{})[c.id+'|'+m]={paid:r2(Math.max(0,paid)), juros:Math.max(0,+juros||0), from:from||null, src:src||'manual', was};
+  markFat(c, m, true);
+}
+function undoFatPayment(c, m){
+  const rec=(S.faturas||{})[c.id+'|'+m]; if (S.faturas) delete S.faturas[c.id+'|'+m];
+  markFat(c, m, false); if (rec && rec.was) for (const k of rec.was) S.status[k]=true;
+}
+
+/* ---------- Transferências entre contas próprias (não contam como entrada nem saída) ---------- */
+const transfersIn = m => occurrences(m, S.entries.filter(e=>e.kind==='transfer'), true);
+// Pares de lançamentos únicos que parecem a mesma transferência: saída numa conta, entrada em outra, mesmo valor, até 1 dia de diferença.
+function xferPairs(m){
+  const occ=occurrences(m, S.entries).filter(o=>o.e.type==='single' && !o.e.fat && !o.e.reimbursementFor && o.e.accountId && !isCardAcc(o.e.accountId));
+  const outs=occ.filter(o=>o.e.kind==='out'), ins=occ.filter(o=>o.e.kind==='in'), used=new Set(), res=[], no=S.notXfer||{};
+  for (const a of outs) for (const b of ins){
+    if (used.has(b.e.id) || a.e.accountId===b.e.accountId || Math.abs(a.amount-b.amount)>0.004 || Math.abs(a.day-b.day)>1 || no[a.e.id+'|'+b.e.id]) continue;
+    res.push({out:a, inn:b}); used.add(b.e.id); break;
+  }
+  return res;
+}
+function mergeXfer(outE, inE, m){
+  const done = !!(S.status[outE.id+'|'+m] || S.status[inE.id+'|'+m]);
+  const t={id:uid(), kind:'transfer', type:'single', name:'Transferência '+(accById(outE.accountId)?.name||'')+' → '+(accById(inE.accountId)?.name||''), start:m, day:outE.day, amount:outE.amount, fromId:outE.accountId, toId:inE.accountId, accountId:null, dayRule:'fixed'};
+  if (outE.importKey) t.importKey=outE.importKey;
+  removeEntry(outE.id); removeEntry(inE.id);
+  delete S.status[outE.id+'|'+m]; delete S.status[inE.id+'|'+m];
+  S.entries.push(t); if (done) S.status[t.id+'|'+m]=true;
+  return t;
+}
 
 
 /* ---------- Feriados nacionais (perpétuos) e dias úteis bancários ---------- */
@@ -1589,9 +1724,10 @@ function recStart(e){ return e.start; }
 function effBase(){ const b=S.settings.baseMonth, e=earliestStart(S.entries||[]); return e && e<b ? e : b; }
 function earliestStart(entries){ return entries.filter(e=>!e.virtual && !e.vault && !e.reimbursementFor && (e.type==='recurring'||e.type==='single') && e.start).map(e=>e.start).sort()[0] || null; }
 function amountAt(e,m){ let a=0; for (const c of e.changes) if (c.from<=m) a=c.amount; return a; }
-function occurrences(m, entries){
+function occurrences(m, entries, withXfer){
   const r=[];
   for (const e of entries){
+    if (e.kind==='transfer' && !withXfer) continue;
     let amount, tag, cls;
     if (e.type==='recurring'){
       if (m<recStart(e) || (e.end && m>e.end)) continue;
@@ -1604,8 +1740,10 @@ function occurrences(m, entries){
       if (e.start!==m) continue; amount=e.amount; tag='Variável/Único'; cls='';
     }
     const rd = resolveDay(e, m);
-    r.push({e, m, amount, tag, cls, cat: e.kind==='out'?inferCat(e):null, day:rd.day, adj:rd.info,
-      third: e.kind==='out' && e.whoUsed==='other', reimb: !!e.reimbursementFor, done:!!(S && S.status[e.id+'|'+m]) || (e.id==='__sim' && e.type==='single' && m===CUR)});
+    if (e.fat){ tag = e.fat==='carry' ? 'Fatura anterior' : 'Fica para o mês seguinte'; cls='fatt'; }
+    if (e.kind==='transfer'){ tag='Transferência'; cls='xfer'; }
+    r.push({e, m, amount, tag, cls, cat: e.kind==='out' && !e.fat ? inferCat(e) : null, day:rd.day, adj:rd.info,
+      third: e.kind==='out' && e.whoUsed==='other', reimb: !!e.reimbursementFor, done: e.fat==='adj' || !!(S && S.status[e.id+'|'+m]) || (e.id==='__sim' && e.type==='single' && m===CUR)});
   }
   return r.sort((a,b)=>a.day-b.day || (a.e.kind===b.e.kind?b.amount-a.amount:(a.e.kind==='in'?-1:1)));
 }
@@ -1928,7 +2066,8 @@ function renderMHome(r){
       <span class="mh-big num ${r.end<0?'t-stop':''}">${fmt(r.end)}</span>
       <span class="mh-cap sm">${isCur?`+ ${fmt(cp.pendIn)} ainda entram · − ${fmt(cp.pendOut)} ainda saem`:`+ ${fmt(r.inTotal)} entram · − ${fmt(r.outTotal)} saem`}</span>
     </div>
-    <div class="mh-stats"><div><span class="mh-cap sm">${s1[0]}</span><b class="num ${s1[2]}">${s1[1]}</b></div><div><span class="mh-cap sm">${s2[0]}</span><b class="num ${s2[2]}">${s2[1]}</b></div></div>`;
+    <div class="mh-stats"><div><span class="mh-cap sm">${s1[0]}</span><b class="num ${s1[2]}">${s1[1]}</b></div><div><span class="mh-cap sm">${s2[0]}</span><b class="num ${s2[2]}">${s2[1]}</b></div></div>
+    ${r.outTotal>0?`<div class="mh-week" style="margin-top:12px"><div class="mh-row"><span class="mh-cap sm">Já saiu <b class="num">${fmt(r.outDone)}</b></span><span class="mh-cap sm">Ainda vai sair <b class="num c-warn">${fmt(r2(r.outTotal-r.outDone))}</b></span></div><div class="mh-bar"><i class="go" style="width:${Math.min(100,Math.max(0,r.outDone/r.outTotal*100)).toFixed(1)}%;background:var(--out)"></i></div></div>`:''}`;
   if (isCur){
     const dow=dowOf(CUR,TODAY), ws=Math.max(1, TODAY-((dow+6)%7));
     const spent = r.outs.filter(o=>o.e.type==='single' && !o.third && !o.e.virtual && !o.e.vault && o.done && o.day>=ws && o.day<=TODAY).reduce((a,o)=>a+o.amount,0);
@@ -1936,7 +2075,7 @@ function renderMHome(r){
     const lvl = pct>=100?'stop':pct>=75?'care':'go';
     $('#mh-week').innerHTML = `<div class="mh-week"><div class="mh-row"><span class="mh-cap">Esta semana</span><span class="num mh-cap sm">${fmt(r2(spent))} de ${fmt(r2(budget))}</span></div><div class="mh-bar"><i class="${lvl}" style="width:${pct.toFixed(1)}%"></i></div></div>`;
   } else $('#mh-week').innerHTML='';
-  const pick = row => row ? row.outs.filter(o=>!o.done && !o.e.virtual && !o.e.vault && o.e.id!=='__sim').sort((a,b)=>a.day-b.day) : [];
+  const pick = row => row ? row.outs.filter(o=>!o.done && !o.e.virtual && !o.e.vault && o.e.fat!=='adj' && o.e.id!=='__sim').sort((a,b)=>a.day-b.day) : [];
   let items = pick(r);
   if (isCur && items.length<5){ items = items.concat(pick(P.find(x=>x.m===addM(CUR,1)))); }
   items = items.slice(0,4);
@@ -2130,7 +2269,9 @@ function renderMonth(r){
       ${r.reimbIn?`<div class="sub">Inclui <span class="num">${fmt(r.reimbIn)}</span> de reembolsos da família</div>`:''}</div>
     <div class="card"><div class="label c-out">Saídas</div><div class="big num">${fmt(r.outTotal)}</div>
       <div class="meter">${Object.keys(CATS).map(k=>`<i style="width:${pf(r.cat[k])}%;background:${CATS[k].color}" title="${CATS[k].label}"></i>`).join('')}<i style="width:${pf(r.thirdOut)}%;background:repeating-linear-gradient(45deg,var(--c-est) 0 3px,transparent 3px 6px)" title="Gastos de terceiros"></i></div>
-      <div class="sub flex flex-wrap gap-x-3 gap-y-0.5" style="font-size:12px">${Object.keys(CATS).map(k=>`<span class="flex items-center gap-1"><i class="dot" style="background:${CATS[k].color}"></i>${CATS[k].short} <span class="num">${fmtK(r.cat[k])}</span></span>`).join('')}${r.thirdOut?`<span>De terceiros <span class="num">${fmtK(r.thirdOut)}</span></span>`:''}</div></div>
+      <div class="sub flex flex-wrap gap-x-3 gap-y-0.5" style="font-size:12px">${Object.keys(CATS).map(k=>`<span class="flex items-center gap-1"><i class="dot" style="background:${CATS[k].color}"></i>${CATS[k].short} <span class="num">${fmtK(r.cat[k])}</span></span>`).join('')}${r.thirdOut?`<span>De terceiros <span class="num">${fmtK(r.thirdOut)}</span></span>`:''}</div>
+      <div class="row-split"><span class="muted">Já saiu <span class="num">${fmt(r.outDone)}</span></span><span class="muted">Ainda vai sair <span class="num c-warn">${fmt(r2(r.outTotal-r.outDone))}</span></span></div>
+      ${(()=>{ const xs=transfersIn(r.m); return xs.length?`<div class="sub" style="color:var(--cal-bal)">⇄ ${fmt(r2(xs.reduce((a,o)=>a+o.amount,0)))} em transferências entre suas contas, fora das saídas</div>`:''; })()}</div>
     <div class="card"><div class="label">Saldo final projetado</div><div class="big num ${r.end<0?'c-out':''}">${fmt(r.end)}</div>
       <div class="sub">Resultado do mês: <span class="num ${r.inTotal-r.outTotal<0?'c-out':'c-in'}">${(r.inTotal-r.outTotal>=0?'+':'')+fmt(r2(r.inTotal-r.outTotal))}</span>${r.debtOut?` · inclui <span class="num c-out">${fmt(r.debtOut)}</span> de dívida simulada`:''}</div></div>
     <div class="card"><div class="label">Comprometimento da renda</div><div class="big num" style="color:${compCol}">${comp===null?'—':pct(comp)}</div>
@@ -2201,6 +2342,36 @@ $('#tabs-toggle').onclick=()=>setTabsClosed(!tabsClosed);
 $('#tabs-new').onclick=()=>openEntry(null, sel, 'out');
 let shownTab=null, shownMonth=null;
 function animateIn(el){ if (!el) return; el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); }
+let LF = ['all','conta','fat'].includes(pref('lf')) ? pref('lf') : 'all';
+function renderLista(r){
+  $$('#lf-seg [data-lf]').forEach(b=>{ const on=b.dataset.lf===LF; b.classList.toggle('on',on); b.setAttribute('aria-selected',String(on)); });
+  const fatMode = LF==='fat';
+  $('#lp-in').hidden = fatMode; $('#lp-out').hidden = fatMode; $('#fat-view').hidden = !fatMode;
+  // sugestão de transferência
+  const pairs = xferPairs(r.m), sug=$('#xfer-sug');
+  if (pairs.length && !fatMode){ const p=pairs[0], fa=accById(p.out.e.accountId), ta=accById(p.inn.e.accountId);
+    sug.hidden=false; sug.innerHTML=`<div class="xsug enter"><div style="font-size:14px"><b>Parece uma transferência entre suas contas.</b> Saída de <b class="num">${fmt(p.out.amount)}</b> no ${esc(fa?fa.name:'')} e entrada de <b class="num">${fmt(p.inn.amount)}</b> no ${esc(ta?ta.name:'')}, dia ${p.out.day}. Hoje isso conta como entrada <i>e</i> saída.</div>
+      <div class="flex flex-wrap gap-2"><button type="button" class="btn btn-sm btn-primary" data-xmerge="${p.out.e.id}|${p.inn.e.id}">Juntar como transferência</button><button type="button" class="btn btn-sm btn-ghost" data-xno="${p.out.e.id}|${p.inn.e.id}">Não, são lançamentos diferentes</button></div></div>`;
+    sug.querySelector('[data-xmerge]').onclick=()=>{ mergeXfer(p.out.e, p.inn.e, r.m); commit(); toast(`Virou transferência: entradas e saídas caíram ${fmt(p.out.amount)}, a sobra não mudou`); };
+    sug.querySelector('[data-xno]').onclick=()=>{ (S.notXfer=S.notXfer||{})[p.out.e.id+'|'+p.inn.e.id]=1; commit(); toast('Mantidos como entrada e saída'); };
+  } else { sug.hidden=true; sug.innerHTML=''; }
+  // transferências
+  const xs = transfersIn(r.m);
+  $('#lp-xfer').hidden = fatMode || !xs.length;
+  if (xs.length){ $('#xfer-sub').innerHTML = `<span class="num">${xs.length}</span> · <span class="num">${fmt(r2(xs.reduce((a,o)=>a+o.amount,0)))}</span> movidos · impacto zero na sobra`; $('#list-xfer').innerHTML = xs.map(xferItemHTML).join(''); }
+  if (fatMode){
+    const cards=S.accounts.filter(a=>a.kind==='card').map(c=>fatInfo(r,c)).filter(F=>F.total>0.004 || F.recd || F.items.length);
+    $('#fat-view').innerHTML = (cards.length ? `<div class="fat-grid">${cards.map(fatCardHTML).join('')}</div>` : `<div class="panel px-4 py-6 text-center sub">Nenhuma fatura de cartão em ${mLabel(r.m)}. Cadastre um cartão em Bancos e lance as compras com ele.</div>`)
+      + `<div class="sub">Pagar a fatura pela conta corrente é uma saída só: as compras de dentro dela não somam de novo. Se pagar só uma parte, o resto entra na fatura do mês seguinte como saldo anterior em aberto.</div>`;
+    return;
+  }
+  const outs = LF==='conta' ? r.outs.filter(o=>!isCardAcc(o.e.accountId)) : r.outs;
+  const outSum = a => r2(a.reduce((s,o)=>s+o.amount,0)), doneSum = a => r2(a.filter(o=>o.done).reduce((s,o)=>s+o.amount,0));
+  $('#out-sub').innerHTML = `<span class="num">${outs.filter(o=>o.e.fat!=='adj').length}</span> ${outs.length===1?'lançamento':'lançamentos'} · já saiu <span class="num">${fmt(doneSum(outs))}</span> de <span class="num">${fmt(outSum(outs))}</span>`;
+  $('#list-in').innerHTML = list(r.ins,'Nada a receber neste mês.');
+  $('#list-out').innerHTML = LF==='conta' ? list(outs,'Nada a pagar pela conta neste mês.') + (r.outs.length>outs.length?`<div class="px-4 py-3 sub" style="border-top:1px solid var(--line)">As compras no cartão estão em <button type="button" class="link-btn" data-lf-go="fat" style="color:var(--accent);font-weight:600">Faturas de Cartão</button>.</div>`:'') : listOutsGrouped(r,'Nada a pagar neste mês.');
+}
+$$('#lf-seg [data-lf]').forEach(b=>b.onclick=()=>{ LF=b.dataset.lf; pref('lf',LF); render(); animateIn($('#view-lista')); });
 function renderTabs(r){
   $$('[data-tab]').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.tab===tab)));
   $('#view-lista').hidden = tab!=='lista'; $('#view-cal').hidden = tab!=='cal'; $('#view-dividas').hidden = tab!=='dividas'; $('#view-desafio').hidden = tab!=='desafio';
@@ -2208,8 +2379,7 @@ function renderTabs(r){
   shownTab = tab;
   $('#tab-note').textContent = {cal:'Toque num dia para ver os lançamentos; toque duas vezes para lançar nele', lista:'Toque num lançamento para editar', dividas:'Dívidas não afetam o fluxo até você ligar a simulação', desafio:'O desafio só sai do saldo depois que você aceita'}[tab];
   $('#in-sub').innerHTML = `<span class="num">${r.ins.length}</span> ${r.ins.length===1?'lançamento':'lançamentos'} · <span class="num">${fmt(r.inTotal)}</span>`;
-  $('#out-sub').innerHTML = `<span class="num">${r.outs.length}</span> ${r.outs.length===1?'lançamento':'lançamentos'} · pago <span class="num">${fmt(r.outDone)}</span> de <span class="num">${fmt(r.outTotal)}</span>`;
-  $('#list-in').innerHTML = list(r.ins,'Nada a receber neste mês.'); $('#list-out').innerHTML = list(r.outs,'Nada a pagar neste mês.');
+  renderLista(r);
   if (tab==='cal') renderCal(r);
   if (tab==='dividas') renderDebts();
   if (tab==='desafio') renderChallenge();
@@ -2240,25 +2410,81 @@ function quickEdit(el, kind, id, m){
   ['keyup','keypress'].forEach(t=>inp.addEventListener(t,ev=>ev.stopPropagation()));
 }
 let justToggled=null;
-function list(arr, empty){
-  if (!arr.length) return `<div class="px-4 py-6 text-center sub">${empty}</div>`;
-  return arr.map(o=>{
+function itemHTML(o, extraCls){
     const k=o.e.id+'|'+o.m, isIn=o.e.kind==='in', lbl = isIn?(o.done?'Recebido':'Marcar como recebido'):(o.done?'Pago':'Marcar como pago');
+    if (o.e.fat==='adj') return `<div class="item adj sub-it ${extraCls||''}"><span class="xfer-ic" style="background:var(--surface-2);color:var(--muted)">${ic('chevr2',13)}</span>
+      <button class="body" data-edit="${o.e.id}" data-m="${o.m}"><div class="name"><span>${esc(o.e.name)}</span></div><div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5"><span class="tag fatt">não sai da conta neste mês</span></div></button>
+      <div class="amt num">+${fmt(-o.amount)}</div></div>`;
     const acc=accById(o.e.accountId);
     const extra = [];
     if (o.third) extra.push(`<span class="tag fam">De ${esc(o.e.whoName||'terceiro')} · reembolsável</span>`);
     if (o.reimb) extra.push(`<span class="tag fam">Reembolso</span>`);
     if (o.e.virtual) extra.push(`<span class="tag sim">Simulação de dívida</span>`);
     if (o.e.vault) extra.push(`<span class="tag vault">${ic('gem',11)} Cofre do desafio</span>`);
+    if (!o.done && o.m<=CUR && !o.e.vault && !o.e.virtual) extra.push(`<span class="tag pend">${isIn?'a receber':'pendente'}</span>`);
     if (o.adj) extra.push(`<span class="tag adj ${o.adj.moved?'mv':''}">${ic(o.adj.kind==='ante'?'chevl2':o.adj.kind==='adia'?'chevr2':'calendar',12)} ${esc(o.adj.txt)}</span>`);
-    return `<div class="item ${isIn?'k-in':'k-out'} ${o.done?'done':''}">
+    return `<div class="item ${isIn?'k-in':'k-out'} ${o.done?'done':''} ${extraCls||''}">
       <button class="check ${o.done?'on':''} ${justToggled===k?'just':''}" data-toggle="${k}" aria-label="${lbl}" title="${lbl}">${check}</button>
       <button class="body" data-edit="${o.e.id}" data-m="${o.m}">
         <div class="name">${o.cat?`<i class="dot" style="background:${CATS[o.cat].color}" title="${CATS[o.cat].label}"></i>`:''}<span ${qeOk(o)?`data-qe="name" title="Toque para renomear"`:''}>${esc(o.e.name)}</span></div>
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5"><span class="tag ${o.cls}">${o.tag}</span>${extra.join('')}<span class="sub">dia ${o.day}${o.cat?' · '+CATS[o.cat].short:''}${acc?' · <i class="dot" style="background:'+acc.color+';width:6px;height:6px"></i> '+esc(acc.name):(o.e.method?' · '+esc(o.e.method):'')}${o.done?(isIn?' · recebido':' · pago'):''}</span></div>
       </button>
       <div class="amt num ${isIn?'c-in':''}" ${qeOk(o)?`data-qe="amt" data-id="${o.e.id}" data-m="${o.m}" tabindex="0" role="button" title="Toque para mudar o valor"`:''}>${isIn?'+':'−'}${fmt(o.amount)}</div></div>`;
-  }).join('');
+}
+function list(arr, empty){
+  if (!arr.length) return `<div class="px-4 py-6 text-center sub">${empty}</div>`;
+  return arr.map(o=>itemHTML(o)).join('');
+}
+const FAT_STATE = {pend:['pendente','low'], paid:['paga','ok'], part:['paga em parte','low'], open:['não paga','over'], zero:['sem compras','']};
+const FAT_OPEN = new Set();
+// Saídas com as compras de cada cartão agrupadas numa linha só: a fatura (as compras abrem como detalhe e não somam de novo)
+function listOutsGrouped(r, empty){
+  const parts=[], byCard={};
+  for (const o of r.outs){ const a=accById(o.e.accountId); if (a && a.kind==='card') (byCard[a.id]=byCard[a.id]||[]).push(o); else parts.push({day:o.day, html:itemHTML(o)}); }
+  for (const id of Object.keys(byCard)){
+    const c=accById(id), F=fatInfo(r,c), open=FAT_OPEN.has(id+'|'+r.m), st=FAT_STATE[F.state], k=id+'|'+r.m;
+    const out = F.recd ? F.paid : F.total;
+    let h=`<div class="item k-out fat-head ${open?'open':''} ${F.state==='paid'?'done':''}" data-fat-toggle="${k}" role="button" tabindex="0" aria-expanded="${open}">
+      <span class="xfer-ic" style="background:color-mix(in srgb,${c.color} 16%,var(--surface));color:${c.color}">${ic('card',14)}</span>
+      <div class="body"><div class="name"><span>Fatura ${esc(c.name)}</span></div>
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5"><span class="chip ${st[1]}">${st[0]}</span>${F.carry>0?`<span class="tag pend">inclui ${fmt(F.carry)} em aberto</span>`:''}<span class="sub">vence dia ${F.due} · ${F.items.length} ${F.items.length===1?'compra':'compras'}</span></div></div>
+      <div class="amt num">−${fmt(out)}</div><span class="chev">${ic('chevr',14).replace('m9 18 6-6-6-6','m6 9 6 6 6-6')}</span></div>`;
+    if (open) h += byCard[id].map(o=>itemHTML(o,'sub-it')).join('') + `<div class="item sub-it"><span class="sub" style="flex:1">${F.state==='paid'?'Fatura paga.':'Dê baixa quando pagar: total ou parcial.'}</span><button type="button" class="btn btn-sm" data-fat-go="${k}">Ver fatura</button></div>`;
+    parts.push({day:F.due, html:h});
+  }
+  if (!parts.length) return `<div class="px-4 py-6 text-center sub">${empty}</div>`;
+  return parts.sort((a,b)=>a.day-b.day).map(p=>p.html).join('');
+}
+function xferItemHTML(o){
+  const k=o.e.id+'|'+o.m, f=accById(o.e.fromId), t=accById(o.e.toId), past=!o.done && o.m<=CUR;
+  return `<div class="item ${o.done?'done':''}">
+    <button class="check ${o.done?'on':''} ${justToggled===k?'just':''}" data-toggle="${k}" aria-label="${o.done?'Feita':'Marcar como feita'}" title="${o.done?'Feita':'Marcar como feita'}">${check}</button>
+    <button class="body" data-edit="${o.e.id}" data-m="${o.m}"><div class="name"><span>${esc(o.e.name)}</span></div>
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5"><span class="tag xfer">${o.e.type==='recurring'?'Transferência fixa':'Transferência'}</span>${past?'<span class="tag pend">agendada</span>':''}<span class="sub">dia ${o.day} · ${esc(f?f.name:'?')} → ${esc(t?t.name:'?')} · não conta como entrada nem saída</span></div></button>
+    <div class="amt num" style="color:var(--cal-bal)">⇄ ${fmt(o.amount)}</div></div>`;
+}
+function fatCardHTML(F){
+  const c=F.c, st=FAT_STATE[F.state], k=c.id+'|'+F.m, nextM=addM(F.m,1);
+  const L=(a,b,cls)=>`<div class="ln ${cls||''}"><span>${a}</span><span>${b}</span></div>`;
+  return `<div class="panel p-4 fatc">
+    <div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><span class="xfer-ic" style="background:color-mix(in srgb,${c.color} 16%,var(--surface));color:${c.color}">${ic('card',14)}</span>
+      <div class="min-w-0"><div style="font-weight:700">${esc(c.name)}</div><div class="sub">${mLabel(F.m)} · vence dia ${F.due}${c.closeDay?' · fecha dia '+c.closeDay:''}</div></div></div>
+      <span class="chip ${st[1]}">${st[0]}</span></div>
+    <div class="lines">
+      ${F.carry>0?L(`Saldo anterior em aberto (${mLabel(F.carryFrom)})`, fmt(F.carry), 'carry'):L('Saldo anterior em aberto', fmt(0), 'sub')}
+      ${L('Compras à vista do mês', fmt(F.avista))}
+      ${L('Parcelas vigentes', fmt(F.parc))}
+      ${L('Assinaturas e recorrentes', fmt(F.rec))}
+      ${L('Total da fatura', fmt(F.total), 'tot')}
+      ${F.recd||F.state==='paid'?L('Pago', '−'+fmt(F.paid), 'c-in'):''}
+      ${F.next>0?L(`Vai para ${mLabel(nextM)}${F.recd&&F.recd.juros?` (com ${String(F.recd.juros).replace('.',',')}% de juros)`:''}`, fmt(F.next), 'c-warn'):''}
+    </div>
+    <div class="flex flex-wrap gap-2">
+      ${F.total>0.004 && F.state!=='paid' && !F.recd?`<button type="button" class="btn btn-primary" data-fat-pay="${k}">Dar baixa / Pagar fatura</button>`:''}
+      ${F.total>0.004 && F.state==='paid' && !F.recd?`<button type="button" class="btn" data-fat-pay="${k}">Pagou só uma parte?</button>`:''}
+      ${F.recd?`<button type="button" class="btn" data-fat-undo="${k}">Desfazer baixa</button>`:''}
+      ${F.state==='paid' && !F.recd?`<button type="button" class="btn" data-fat-undo="${k}">Marcar como não paga</button>`:''}
+    </div></div>`;
 }
 let lastTap={m:null,d:0,t:0};
 function renderCal(r){
@@ -2269,6 +2495,7 @@ function renderCal(r){
   const [y,mo]=r.m.split('-').map(Number); const first=new Date(y,mo-1,1).getDay(), dim=daysIn(r.m);
   let lowD=1, highD=1; for (let d=1; d<=dim; d++){ if (r.days[d]<r.days[lowD]) lowD=d; if (r.days[d]>r.days[highD]) highD=d; }
   const H=health(P), cushion = H ? Math.round(H.avgIn*0.15) : 0;
+  const XS = transfersIn(r.m);
   let h = WD.map(w=>`<div class="wd">${w}</div>`).join('');
   for (let i=0;i<first;i++) h+='<div></div>';
   for (let d=1; d<=dim; d++){
@@ -2276,9 +2503,9 @@ function renderCal(r){
     const prev = d===1 ? r.start : r.days[d-1], delta = r2(b-prev);
     const vault = r.o.filter(o=>o.day===d && o.e.vault).reduce((s,o)=>s+o.amount,0);
     const state = b<0 ? 'neg' : b<cushion ? 'lowbal' : (fi>0 && delta>0) ? 'up' : '';
-    const hol = holidayOn(r.m, d), moved = r.o.some(o=>o.day===d && o.adj && o.adj.moved);
+    const hol = holidayOn(r.m, d), moved = r.o.some(o=>o.day===d && o.adj && o.adj.moved), hasX = XS.some(o=>o.day===d);
     h += `<button class="day ${state} ${hol?'hol':''} ${isToday?'today':''} ${selDay===d?'sel':''} ${past?'past':''}" data-day="${d}" aria-label="Dia ${d}${hol?', feriado: '+esc(hol.name):''}: saldo ${fmt(b)}${delta?', variação '+fmt(delta):''}">
-      <span class="top"><span class="dn">${d}</span><span class="icons">${hol?`<span class="only-sm" title="Feriado">${ic('umbrella',11)}</span>`:''}${moved?`<span title="Lançamento com data ajustada por fim de semana ou feriado">${ic('zap',11)}</span>`:''}${vault?`<span title="Depósito do desafio">${ic('gem',11)}</span>`:''}${fi?'<i class="dot" style="background:var(--in);width:6px;height:6px"></i>':''}${fo?'<i class="dot" style="background:var(--out);width:6px;height:6px"></i>':''}</span></span>
+      <span class="top"><span class="dn">${d}</span><span class="icons">${hol?`<span class="only-sm" title="Feriado">${ic('umbrella',11)}</span>`:''}${moved?`<span title="Lançamento com data ajustada por fim de semana ou feriado">${ic('zap',11)}</span>`:''}${vault?`<span title="Depósito do desafio">${ic('gem',11)}</span>`:''}${hasX?`<span title="Transferência entre suas contas" style="color:var(--cal-bal);font-size:11px;line-height:1">⇄</span>`:''}${fi?'<i class="dot" style="background:var(--in);width:6px;height:6px"></i>':''}${fo?'<i class="dot" style="background:var(--out);width:6px;height:6px"></i>':''}</span></span>
       ${hol?`<span class="hol-pill only-lg" title="${esc(hol.name)} · sem expediente bancário">${ic('umbrella',11)} ${esc(hol.name)}</span>`:''}
       <span class="flows only-lg">${fi?`<span class="num c-in">+${fmtInt(fi)}</span>`:''}${fo-vault>0.005?`<span class="num c-out">−${fmtInt(fo-vault)}</span>`:''}${vault?`<span class="num vault-line">${ic('gem',10)} −${fmtInt(vault)} pro cofre</span>`:''}</span>
       <span class="bal num"><span class="only-lg">R$ ${fmtInt(b)}</span><span class="only-sm">${fmtC(b)}</span></span>
@@ -2304,11 +2531,15 @@ function renderCal(r){
         <div class="sub">Saldo no fim do dia: <span class="num ${r.days[selDay]<0?'c-out':'strong'}">${fmt(r.days[selDay])}</span></div></div>
       <div class="flex gap-2"><button class="btn" data-newday="in">+ Entrada neste dia</button><button class="btn btn-primary" data-newday="out">+ Gasto neste dia</button></div>
     </div>
-    ${list(items,'Nenhum lançamento neste dia.')}
+    ${items.length || !XS.some(o=>o.day===selDay) ? list(items,'Nenhum lançamento neste dia.') : ''}${XS.filter(o=>o.day===selDay).map(xferItemHTML).join('')}
     <div style="border-top:1px solid var(--line)">${summary}</div>`;
   dp.querySelectorAll('[data-newday]').forEach(b=>b.onclick=()=>openEntry(null, r.m, b.dataset.newday, selDay));
 }
 function bindItems(){
+  $$('[data-fat-toggle]').forEach(h=>{ const go=()=>{ const k=h.dataset.fatToggle; if (FAT_OPEN.has(k)) FAT_OPEN.delete(k); else FAT_OPEN.add(k); render(); }; h.onclick=go; h.onkeydown=ev=>{ if (ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); go(); } }; });
+  $$('[data-fat-go],[data-lf-go]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); LF='fat'; pref('lf',LF); render(); });
+  $$('[data-fat-pay]').forEach(b=>b.onclick=()=>openFatPay(b.dataset.fatPay));
+  $$('[data-fat-undo]').forEach(b=>b.onclick=()=>{ const [id,m]=b.dataset.fatUndo.split('|'), c=accById(id); const had=!!(S.faturas||{})[id+'|'+m]; undoFatPayment(c,m); commit(); toast(had?'Baixa desfeita: a fatura de '+mLabel(m)+' voltou como estava':'Fatura de '+mLabel(m)+' marcada como não paga'); });
   $$('[data-toggle]').forEach(b=>b.onclick=()=>{ const k=b.dataset.toggle; justToggled=k; if (S.status[k]) delete S.status[k]; else S.status[k]=true; commit(); setTimeout(()=>{ justToggled=null; }, 600); });
   $$('[data-qe="amt"]').forEach(a=>{ const go=()=>{ if (!a.querySelector('input')) quickEdit(a,'amt',a.dataset.id,a.dataset.m); }; a.onclick=go; a.onkeydown=ev=>{ if (ev.key==='Enter'){ ev.preventDefault(); go(); } }; });
   $$('[data-edit]').forEach(b=>b.onclick=(ev)=>{
@@ -2316,6 +2547,7 @@ function bindItems(){
     if (b.querySelector('.qe-inp')) return; // edição rápida aberta dentro deste item
     const qn = ev && ev.target && ev.target.closest && ev.target.closest('[data-qe="name"]');
     if (qn){ if (!qn.querySelector('input')) quickEdit(qn,'name',id,b.dataset.m); return; }
+    if (id.startsWith('fata_')||id.startsWith('fatc_')){ LF='fat'; pref('lf',LF); sel=b.dataset.m; tab='lista'; pref('tab',tab); if (isMobile()) goTab('lista'); else render(); return; }
     if (id.startsWith('debt_')){ tab='dividas'; pref('tab',tab); render(); $('#view-dividas').scrollIntoView({block:'start'}); return; }
     if (id.startsWith('chal_')){ sel=b.dataset.m; tab='desafio'; pref('tab',tab); render(); $('#view-desafio').scrollIntoView({block:'start'}); return; }
     const e=S.entries.find(x=>x.id===id);
@@ -2598,15 +2830,17 @@ $('#f-debt').addEventListener('submit',ev=>{
 let F = null;
 $('#f-cat').innerHTML = catOptions();
 function setSeg(id,v){ $$('#'+id+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); }
-$$('#f-kind,#f-type,#f-scope,#f-who').forEach(seg=>seg.addEventListener('click',ev=>{
+$$('#f-kind,#f-type,#f-scope,#f-who,#f-status').forEach(seg=>seg.addEventListener('click',ev=>{
   const b=ev.target.closest('button'); if(!b || b.disabled) return;
   if (seg.id==='f-kind') F.kind=b.dataset.v;
   if (seg.id==='f-type' && !F.id){ F.type=b.dataset.v; if (!F.catTouched) $('#f-cat').value=inferCat({type:F.type}); }
   if (seg.id==='f-scope') F.scope=b.dataset.v;
   if (seg.id==='f-who') F.who=b.dataset.v;
+  if (seg.id==='f-status') F.paid=b.dataset.v==='paid';
   syncForm();
 }));
 $('#f-cat').addEventListener('change',()=>{ if(F) F.catTouched=true; syncForm(); });
+['#f-from','#f-to','#f-method'].forEach(x=>$(x).addEventListener('change',()=>F&&syncForm()));
 $('#f-acc').addEventListener('change',()=>{ const a=accById($('#f-acc').value); if (a && a.kind==='card'){ $('#f-method').value='Cartão'; if (a.dueDay && !F.id) $('#f-day').value=a.dueDay; if (a.holder==='shared' && a.holderName && !$('#f-whoname').value) $('#f-whoname').value=a.holderName; } syncForm(); });
 function accOptions(sel){ return `<option value="">Nenhum</option>`+S.accounts.map(a=>`<option value="${a.id}" ${a.id===sel?'selected':''}>${esc(a.name)}${a.kind==='card'?' · cartão':' · conta'}${a.holder==='third'?' ('+esc(a.holderName||'terceiro')+')':''}</option>`).join(''); }
 $('#f-rule').innerHTML = Object.entries(DAY_RULES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
@@ -2624,7 +2858,10 @@ function openEntry(id, ctx, kind, day){
   $('#f-method').value = e&&e.method?e.method:'Pix';
   $('#f-acc').innerHTML = accOptions(e?e.accountId:'');
   $('#f-whoname').value = e&&e.whoName?e.whoName:'';
-  $('#f-cat').value = e&&e.kind==='out' ? inferCat(e) : inferCat({type:F.type});
+  { const ck=S.accounts.filter(a=>a.kind==='checking'), opt=v=>ck.map(a=>`<option value="${a.id}" ${a.id===v?'selected':''}>${esc(a.name)}</option>`).join('');
+    $('#f-from').innerHTML = opt(e&&e.fromId?e.fromId:(ck[0]&&ck[0].id)); $('#f-to').innerHTML = opt(e&&e.toId?e.toId:(ck[1]&&ck[1].id)); }
+  F.paid = e ? !!S.status[e.id+'|'+ctx] : false;
+  $('#f-cat').value = e&&e.kind==='out' ? inferCat(e) : inferCat({type:F.type==='installment'?'installment':F.type});
   $('#f-amount').value = e ? moneyIn(e.type==='recurring'?amountAt(e,ctx>=e.start?ctx:e.start):e.type==='installment'?e.total:e.amount) : '';
   $('#f-error').hidden=true;
   syncForm(); $('#m-entry').hidden=false; setTimeout(()=>$('#f-name').focus(),30);
@@ -2647,13 +2884,30 @@ function syncForm(){
       $('#f-rule-prev').innerHTML = 'Próximas datas: ' + next.map(x=>`<b class="num">${pad(x.rd.day)}/${x.mm.slice(5)}</b> (${WD[dowOf(x.mm,x.rd.day)]})`).join(' · ') + (firstMv?`<br>${esc(firstMv.rd.info.txt)}`:'');
     }
   }
-  $('#wrap-method').hidden = inn; $('#wrap-cat').hidden = inn;
-  $('#wrap-who').hidden = inn || !acc || acc.kind!=='card';
+  const xf = F.kind==='transfer', card = !inn && !xf && acc && acc.kind==='card';
+  $$('#f-type [data-v="installment"]').forEach(b=>b.hidden=xf);
+  if (xf && F.type==='installment' && !F.id){ F.type='single'; return syncForm(); }
+  $('#wrap-method').hidden = inn || xf; $('#wrap-cat').hidden = inn || xf; $('#wrap-acc').hidden = xf;
+  $('#wrap-from').hidden = !xf; $('#wrap-to').hidden = !xf;
+  $('#wrap-who').hidden = inn || xf || !acc || acc.kind!=='card';
+  setSeg('f-status', F.paid?'paid':'pend');
+  $('#wrap-status').hidden = !!card;
+  $('#f-status-label').textContent = 'Status em '+mLabel(F.ctx||sel);
+  $$('#f-status [data-v="pend"]').forEach(b=>b.textContent = inn?'A receber':xf?'Agendada':'Pendente (não pago)');
+  $$('#f-status [data-v="paid"]').forEach(b=>b.textContent = inn?'Recebido':xf?'Feita':'Pago');
+  $('#f-status-note').textContent = xf ? 'Feita ou não, a sobra do mês é a mesma.' : F.paid ? (inn?'Já caiu na conta.':'Já saiu da conta.') : (inn?'Ainda não caiu, mas já conta na previsão.':'Ainda não pago: continua descontando da sobra prevista, separado do que já saiu.');
+  { const fn=$('#f-fat-note');
+    if (card){ const st=$('#f-start').value||F.ctx;
+      let h=`${ic('card',13)} Entra na fatura de <b>${mLabel(st)}</b> do ${esc(acc.name)}${acc.dueDay?`, que vence dia ${acc.dueDay}`:''}. O pago ou pendente acompanha a fatura: dê baixa em Lançamentos → Faturas de Cartão.`;
+      if (acc.closeDay && acc.dueDay && !F.id && F.type!=='recurring'){ const d=cardDue(TODAY_ISO, acc); h+=` <button type="button" class="link-btn" data-buy-today style="color:var(--accent);font-weight:600">Comprei hoje: usar a fatura de ${mLabel(d.m)}</button>`; }
+      fn.innerHTML=h; fn.hidden=false;
+      const bt=fn.querySelector('[data-buy-today]'); if (bt) bt.onclick=()=>{ const d=cardDue(TODAY_ISO, acc); $('#f-start').value=d.m; $('#f-day').value=d.day; syncForm(); toast('Compra depois do fechamento (dia '+acc.closeDay+') vai para a fatura seguinte'); };
+    } else { fn.hidden=true; fn.innerHTML=''; } }
   $('#f-whoname').hidden = F.who!=='other';
   $('#f-who-note').textContent = F.who==='other'
     ? `Vou criar uma entrada prevista de reembolso no dia ${acc&&acc.dueDay?acc.dueDay+' (vencimento da fatura)':$('#f-day').value}, com o mesmo valor${t==='installment'?' em cada parcela':''}. O gasto não conta no seu comprometimento de renda.`
     : (acc && acc.holder==='third' ? `Cartão em nome de ${acc.holderName||'terceiro'}, mas o gasto é seu.` : '');
-  $('#f-cat-hint').textContent = CATS[$('#f-cat').value].hint;
+  $('#f-cat-hint').textContent = (CATS[$('#f-cat').value]||CATS.estilo).hint;
   $('#f-amount-label').textContent = t==='recurring'?'Valor mensal':t==='installment'?'Valor total':'Valor';
   $('#f-start-label').textContent = t==='recurring'?'Começa em':t==='installment'?'1ª parcela em':'Mês';
   $('#f-hint').textContent = {
@@ -2661,6 +2915,7 @@ function syncForm(){
     installment: inn?'Divide o valor total e lança uma entrada por mês (ex.: alguém vai te pagar em 3x).':'Divide o valor total e lança uma parcela por mês, numerada 1/N, 2/N…',
     single: inn?'Entra só no mês escolhido (13º, restituição, bônus, venda).':'Sai só no mês escolhido (Pix, mercado, compra à vista).'
   }[t];
+  if (xf) $('#f-hint').textContent = 'Dinheiro passando de uma conta sua para outra (Pix para a sua caixinha, Itaú → Nubank). Não conta como entrada, nem saída, nem no teto de gastos.';
   const showScope = e && t==='recurring' && F.ctx>e.start;
   $('#wrap-scope').hidden = !showScope;
   $('#f-start').disabled = !!showScope && F.scope==='forward';
@@ -2669,6 +2924,7 @@ function syncForm(){
   $('#f-preview').textContent = t==='installment' && amt>0 && n>=2 ? `${n} × ${fmt(Math.floor(amt*100/n)/100)} de ${mLabel(st)} a ${mLabel(addM(st,n-1))}`
     : t==='recurring' && st ? (st<CUR ? `Começa em ${mLabel(st)}: aparece desse mês em diante, nunca antes.${st<S.settings.baseMonth?` Sua conta passa a começar em ${mLabel(st)}, com o mesmo saldo inicial.`:''}` : `Aparece de ${mLabel(st)} em diante.`)
     : t==='single' && st && st<S.settings.baseMonth ? `Este lançamento é anterior ao início da conta: ela passa a começar em ${mLabel(st)}.` : '';
+  if (xf){ const fa=accById($('#f-from').value), ta=accById($('#f-to').value); $('#f-preview').innerHTML = `<span style="color:var(--cal-bal);font-weight:600">⇄ Impacto zero na sobra.</span> ${fa&&ta&&fa!==ta?`${esc(fa.name)} −${fmt(amt>0?amt:0)} · ${esc(ta.name)} +${fmt(amt>0?amt:0)}`:''}`; }
   let d='';
   if (e){
     if (t==='recurring' && F.ctx>e.start) d+=`<button type="button" class="btn btn-danger" data-act="end">${F.armed==='end'?'Confirmar encerramento':'Encerrar a partir de '+mLabel(F.ctx)}</button>`;
@@ -2688,10 +2944,12 @@ $('#f-entry').addEventListener('submit',ev=>{
   const name=$('#f-name').value.trim(), amt=parseMoney($('#f-amount').value), start=$('#f-start').value||F.ctx;
   const day=Math.min(31,Math.max(1,parseInt($('#f-day').value)||1)), n=parseInt($('#f-n').value), end=$('#f-end').value||null;
   const acc=accById($('#f-acc').value), whoActive = F.kind==='out' && acc && acc.kind==='card' && F.who==='other', whoName=$('#f-whoname').value.trim();
-  const err = !name?'Dê um nome ao lançamento.': !(amt>0)?'Informe um valor maior que zero.': (F.type==='installment'&&!(n>=2&&n<=120))?'Use de 2 a 120 parcelas.': (F.type==='recurring'&&end&&end<start)?'O último mês precisa ser depois do início.': (whoActive&&!whoName)?'Diga quem usou o cartão, para criar o reembolso.':'';
+  const xf = F.kind==='transfer', fromId=$('#f-from').value, toId=$('#f-to').value;
+  const err = !name?'Dê um nome ao lançamento.': !(amt>0)?'Informe um valor maior que zero.': (xf && S.accounts.filter(a=>a.kind==='checking').length<2)?'Cadastre as duas contas em Bancos e cartões para registrar a transferência.': (xf && (!fromId||!toId||fromId===toId))?'Escolha contas diferentes para origem e destino.': (F.type==='installment'&&!(n>=2&&n<=120))?'Use de 2 a 120 parcelas.': (F.type==='recurring'&&end&&end<start)?'O último mês precisa ser depois do início.': (whoActive&&!whoName)?'Diga quem usou o cartão, para criar o reembolso.':'';
   if (err){ const el=$('#f-error'); el.textContent=err; el.hidden=false; return; }
   const base={kind:F.kind,type:F.type,name,day,accountId:acc?acc.id:null, dayRule: F.type==='single' ? 'fixed' : $('#f-rule').value, bdN: Math.min(20,Math.max(1,parseInt($('#f-bdn').value)||5))};
   if (F.kind==='out'){ base.method=$('#f-method').value; base.cat=$('#f-cat').value; base.whoUsed=whoActive?'other':'me'; base.whoName=whoActive?whoName:''; }
+  if (xf){ base.accountId=null; base.fromId=fromId; base.toId=toId; }
   let e;
   if (!F.id){
     e={id:uid(),...base,start};
@@ -2700,7 +2958,8 @@ $('#f-entry').addEventListener('submit',ev=>{
     S.entries.push(e); toast(whoActive?'Gasto salvo com reembolso previsto':'Lançamento salvo');
   } else {
     e=S.entries.find(x=>x.id===F.id); Object.assign(e,base);
-    if (e.kind==='in'){ delete e.method; delete e.cat; delete e.whoUsed; delete e.whoName; }
+    if (e.kind!=='out'){ delete e.method; delete e.cat; delete e.whoUsed; delete e.whoName; }
+    if (e.kind!=='transfer'){ delete e.fromId; delete e.toId; }
     if (F.type==='recurring'){
       e.end=end;
       if (F.ctx>e.start && F.scope==='forward'){ e.changes=e.changes.filter(c=>c.from<F.ctx); e.changes.push({from:F.ctx,amount:amt}); }
@@ -2711,10 +2970,48 @@ $('#f-entry').addEventListener('submit',ev=>{
     toast('Alterações salvas');
   }
   syncReimb(e);
+  { const sk=e.id+'|'+(F.ctx||e.start), card=e.kind==='out' && isCardAcc(e.accountId);
+    if (!card){ if (F.paid) S.status[sk]=true; else delete S.status[sk]; } }
   let moved=null; if ((e.type==='recurring'||e.type==='single') && e.start < S.settings.baseMonth){ moved=S.settings.baseMonth; S.settings.baseMonth=e.start; }
   commit(); close();
   if (moved) toast(`Sua conta agora começa em ${mLabel(e.start)} (antes: ${mLabel(moved)}), com o mesmo saldo inicial. Ajuste em Ajustes se precisar.`);
 });
+
+/* ---------- Pagar fatura (total, parcial ou não paguei) ---------- */
+let PF=null;
+function openFatPay(k){
+  const [id,m]=k.split('|'), c=accById(id), r=P.find(x=>x.m===m); if (!c||!r) return;
+  const F=fatInfo(r,c); PF={c, m, F, mode:'total'};
+  $('#pf-title').textContent = 'Pagar fatura · '+c.name;
+  $('#pf-sum').innerHTML = `<div class="panel p-3 flex flex-col gap-1"><div class="flex justify-between gap-2"><b>${mLabel(m)} · vence dia ${F.due}</b><b class="num">${fmt(F.total)}</b></div>
+    <div class="sub">${F.carry>0?`${fmt(F.carry)} em aberto de ${mLabel(F.carryFrom)} + `:''}${fmt(r2(F.avista+F.parc+F.rec))} de compras, parcelas e assinaturas</div></div>`;
+  $('#pf-amt').value=''; $('#pf-jur').value='';
+  const checking=S.accounts.filter(a=>a.kind==='checking');
+  $('#pf-from').innerHTML = checking.length ? checking.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('') : '<option value="">Conta corrente</option>';
+  $('#pf-error').hidden=true; syncFatPay(); $('#m-fat').hidden=false;
+}
+function syncFatPay(){
+  const {F,m,mode}=PF; setSeg('pf-mode',mode);
+  $('#pf-wrap-amt').hidden = mode!=='part'; $('#pf-wrap-jur').hidden = mode==='total'; $('#pf-wrap-from').hidden = mode==='none';
+  const paid = mode==='total'?F.total : mode==='none'?0 : (parseMoney($('#pf-amt').value)||0), j=Math.max(0,parseMoney($('#pf-jur').value)||0);
+  const rem=r2(Math.max(0,F.total-paid)), next=r2(rem*(1+j/100));
+  $('#pf-ok').textContent = mode==='none' ? 'Confirmar' : 'Dar baixa';
+  $('#pf-impact').innerHTML = rem<=0.004
+    ? `Sai <b class="num">${fmt(F.total)}</b> da conta, uma vez só. As ${F.items.length} compras desta fatura não somam de novo.`
+    : `${paid>0?`Sai <b class="num">${fmt(paid)}</b> da conta agora. `:'Nada sai da conta agora. '}<b class="num c-warn">${fmt(next)}</b> ${j?`(${fmt(rem)} + ${String(j).replace('.',',')}% de juros) `:''}vão para a fatura de ${mLabel(addM(m,1))} como saldo anterior em aberto, e os meses seguintes se recalculam.${j?'':' No banco, esse valor costuma ter juros do rotativo: informe a taxa se souber.'}`;
+}
+$('#pf-mode').addEventListener('click',ev=>{ const b=ev.target.closest('button'); if(!b||!PF) return; PF.mode=b.dataset.v; syncFatPay(); if (PF.mode==='part') setTimeout(()=>$('#pf-amt').focus(),40); });
+['#pf-amt','#pf-jur'].forEach(x=>$(x).addEventListener('input',()=>PF&&syncFatPay()));
+$('#pf-ok').onclick=()=>{
+  const {c,m,F,mode}=PF, err=$('#pf-error');
+  const paid = mode==='total'?F.total : mode==='none'?0 : parseMoney($('#pf-amt').value);
+  if (mode==='part' && !(paid>0)){ err.textContent='Informe quanto você pagou.'; err.hidden=false; return; }
+  if (paid>F.total+0.004){ err.textContent='O valor passa do total da fatura ('+fmt(F.total)+').'; err.hidden=false; return; }
+  const j = mode==='total'?0:Math.max(0,parseMoney($('#pf-jur').value)||0);
+  setFatPayment(c, m, paid, j, mode==='none'?null:($('#pf-from').value||null), 'manual');
+  const rem=r2(F.total-paid); commit(); close();
+  toast(rem>0.004 ? `${fmt(r2(rem*(1+j/100)))} foram para a fatura de ${mLabel(addM(m,1))}` : 'Fatura paga · uma saída só na conta');
+};
 
 /* ---------- Bancos e cartões ---------- */
 let AF={id:null, kind:'card', color:COLORS[0]}, accArmed=null;
@@ -2861,15 +3158,42 @@ function buildRows(raw){
       if (!used.has(k) && !o.done && o.e.kind===kind && Math.abs(o.amount-amount)<0.01 && Math.abs(o.day-day)<=5){ match={key:k, name:o.e.name, day:o.day}; used.add(k); break; } }
     const dup = keys.has(importKey);
     const payment = !!r.payment || (card && kind==='in' && /pagamento|pgto|fatura/i.test(r.desc));
+    // pagamento da fatura: na fatura ("Pagamento recebido") ou no extrato da conta ("Pagamento fatura Nubank") vira baixa, nunca saída nova
+    let fatPay=null;
+    if (payment && card){
+      const pm=r.date.slice(0,7), cands=[pm, addM(pm,-1)].map(x=>({m:x, dist:Math.abs(daysBetween(x+'-'+pad(fatDue(a,x)), r.date))})).sort((x,y)=>x.dist-y.dist);
+      const fm=cands[0].m; fatPay={cardId:a.id, m:fm, total:fatTotal(a,fm), from:null};
+    } else if (!card && kind==='out' && !match){
+      const cards=S.accounts.filter(x=>x.kind==='card'), d=String(r.desc||'').toLowerCase();
+      const byName=cards.filter(c=>d.includes(cleanAccName(c.name).toLowerCase().split(' ')[0]));
+      const looks=/fatura|cart[aã]o|pgto.*cart|pag.*cart/i.test(d);
+      for (const c of (byName.length?byName:cards)){
+        for (const fm of [m, addM(m,-1)]){ const tot=fatTotal(c,fm); if (!(tot>0)) continue;
+          const close = Math.abs(tot-amount) <= Math.max(1, tot*0.02);
+          if ((looks && (byName.length || close)) || (close && byName.length)){ fatPay={cardId:c.id, m:fm, total:tot, from:a.id}; break; } }
+        if (fatPay) break;
+      }
+    }
+    // transferência entre contas próprias: casa com um lançamento único de outra conta, sinal oposto, mesmo valor, até 2 dias
+    let xfer=null;
+    if (!card && !match && !fatPay && !payment){
+      for (const o of occurrences(m, S.entries)){ const oa=accById(o.e.accountId);
+        if (!oa || oa.kind!=='checking' || oa.id===a.id || o.e.type!=='single' || o.e.kind===kind || Math.abs(o.amount-amount)>0.004 || Math.abs(o.day-day)>2) continue;
+        xfer={entryId:o.e.id, other:oa.id, name:o.e.name}; break; }
+    }
     // já existe algo lançado (inclusive já pago) com data próxima e valor quase igual?
     let similar=null;
-    if (!match && !dup && !payment){
+    if (!match && !dup && !payment && !fatPay && !xfer){
       for (const o of occurrences(m, S.entries)){ const k=o.e.id+'|'+m;
         if (used.has(k) || o.e.kind!==kind || o.e.virtual || o.e.vault) continue;
         if (Math.abs(o.amount-amount) <= Math.max(0.5, amount*0.01) && Math.abs(o.day-day)<=3){ similar={key:k, name:o.e.name, day:o.day, amount:o.amount, done:o.done}; used.add(k); break; } }
     }
-    return {include:!dup && !payment && !similar, similar, decision: similar?'merge':null, accId:a.id, date:r.date, desc:r.desc||'(sem descrição)', amount, kind, cat:(r.cat && CATS[r.cat]) ? r.cat : guessCat(r.desc||''), who:'me', m, day, done, match, dup, payment, importKey, pending:!!r.pending};
+    return {include:!dup && (!payment || !!fatPay) && !similar, fatPay, xfer, xdec: xfer?'transfer':null, similar, decision: similar?'merge':null, accId:a.id, date:r.date, desc:r.desc||'(sem descrição)', amount, kind, cat:(r.cat && CATS[r.cat]) ? r.cat : guessCat(r.desc||''), who:'me', m, day, done, match, dup, payment, importKey, pending:!!r.pending};
   }).sort((x,y)=>x.date<y.date?-1:1);
+  // pares dentro do próprio arquivo (Open Finance com várias contas): saída numa conta e entrada noutra, mesmo valor e data
+  for (let i=0;i<IM.rows.length;i++){ const x=IM.rows[i]; if (x.match||x.fatPay||x.xfer||x.dup||x.xpartner!=null||isCardAcc(x.accId)) continue;
+    for (let j=i+1;j<IM.rows.length;j++){ const y=IM.rows[j]; if (y.match||y.fatPay||y.xfer||y.dup||y.xpartner!=null||isCardAcc(y.accId)) continue;
+      if (y.accId!==x.accId && y.kind!==x.kind && Math.abs(y.amount-x.amount)<0.005 && y.date===x.date){ x.xpartner=j; y.xpartner=i; x.xdec=y.xdec='transfer'; y.include=false; x.include=true; break; } } }
   renderPreview();
 }
 function renderPreview(){
@@ -2879,7 +3203,7 @@ function renderPreview(){
   const nmerge=IM.rows.filter(r=>r.similar&&r.decision==='merge').length, n=IM.rows.filter(r=>r.include).length+nmerge, nm=IM.rows.filter(r=>r.include&&r.match).length+nmerge;
   setIStep(3);
   const acc0=accById(IM.accId), meta=IM.meta||{}, dd=x=>x?String(x).slice(8,10)+'/'+String(x).slice(5,7):null;
-  const selOut=IM.rows.filter(r=>(r.include||(r.similar&&r.decision==='merge'))&&r.kind==='out'), selSum=selOut.reduce((a,r)=>a+r.amount,0);
+  const selOut=IM.rows.filter(r=>(r.include||(r.similar&&r.decision==='merge'))&&r.kind==='out'&&!r.fatPay&&!(r.xdec==='transfer'&&(r.xfer||r.xpartner!=null))), selSum=selOut.reduce((a,r)=>a+r.amount,0);
   const byCat={}; for (const k in CATS) byCat[k]=selOut.filter(r=>!r.match&&r.cat===k).reduce((a,r)=>a+r.amount,0);
   const maxCat=Math.max(1,...Object.values(byCat));
   const kp=(l,v,cls)=>`<div class="ikpi"><span class="label">${l}</span><b class="num ${cls||''}">${v}</b></div>`;
@@ -2900,9 +3224,14 @@ function renderPreview(){
       <td style="min-width:160px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.desc)}">${esc(r.desc)}</td>
       <td class="num ${r.kind==='in'?'c-in':''}" style="white-space:nowrap">${r.kind==='in'?'+':'−'}${fmt(r.amount)}</td>
       <td class="num" style="white-space:nowrap">${r.day} ${mLabel(r.m)}</td>
-      <td>${r.kind==='out'&&!r.match?`<select class="inp" data-rc="${i}">${Object.entries(CATS).map(([k,c])=>`<option value="${k}" ${k===r.cat?'selected':''}>${c.label}</option>`).join('')}</select>`:'<span class="sub">—</span>'}</td>
+      <td>${r.kind==='out'&&!r.match&&!r.fatPay&&!(r.xdec==='transfer'&&(r.xfer||r.xpartner!=null))?`<select class="inp" data-rc="${i}">${Object.entries(CATS).map(([k,c])=>`<option value="${k}" ${k===r.cat?'selected':''}>${c.label}</option>`).join('')}</select>`:'<span class="sub">—</span>'}</td>
       ${card?`<td>${r.kind==='out'&&!r.match&&isCard(r)?`<select class="inp" data-rw="${i}"><option value="me">Meu gasto</option>${ppl.map(p=>`<option value="${esc(p)}" ${r.who===p?'selected':''}>${esc(p)} · reembolsar</option>`).join('')}</select>`:'<span class="sub">—</span>'}</td>`:''}
-      <td style="white-space:nowrap">${r.similar?`<div class="flex flex-col gap-1"><span class="chip low" title="Mesmo valor (ou quase) e data próxima">parece já lançado: “${esc(r.similar.name)}” · dia ${r.similar.day}</span><select class="inp" data-rd="${i}" style="padding:4px 6px"><option value="merge" ${r.decision==='merge'?'selected':''}>Mesclar com o existente</option><option value="import" ${r.decision==='import'?'selected':''}>Importar mesmo assim</option></select></div>`:r.dup?'<span class="chip low">já importado</span>':r.payment?'<span class="chip low">pagamento da fatura · ignorado</span>':r.match?`<span class="chip ok" title="Marca o previsto como ${r.kind==='in'?'recebido':'pago'}">concilia “${esc(r.match.name)}”</span>`:`<span class="chip">novo · ${r.done?(r.kind==='in'?'recebido':'pago'):'previsto'}</span>`}</td>
+      <td style="white-space:nowrap">${r.fatPay?(()=>{ const c=accById(r.fatPay.cardId), t=r.fatPay.total, rest=r2(t-r.amount);
+          return `<span class="chip ok" title="Não vira saída nova: só marca a fatura como paga">dá baixa na fatura ${esc(c?c.name:'')} de ${mLabel(r.fatPay.m)}${t>0?' ('+fmt(t)+')':''}</span>${rest>0.5?`<div class="sub" style="font-size:11.5px;margin-top:2px">pagou ${fmt(r.amount)}: ${fmt(rest)} vão para ${mLabel(addM(r.fatPay.m,1))}</div>`:''}`; })()
+        : (r.xfer||r.xpartner!=null)?(()=>{ const oa = r.xfer ? accById(r.xfer.other) : accById(IM.rows[r.xpartner].accId), me=accById(r.accId), f=r.kind==='out'?me:oa, t=r.kind==='out'?oa:me;
+          if (r.xpartner!=null && !r.include && r.xdec==='transfer') return `<span class="chip">faz par com a transferência ${esc(f?f.name:'')} → ${esc(t?t.name:'')}</span>`;
+          return `<div class="flex flex-col gap-1"><span class="chip" style="color:var(--cal-bal);border-color:color-mix(in srgb,var(--cal-bal) 45%,var(--line))">parece transferência: ${esc(f?f.name:'')} → ${esc(t?t.name:'')}</span><select class="inp" data-rx="${i}" style="padding:4px 6px"><option value="transfer" ${r.xdec==='transfer'?'selected':''}>Transferência (não conta)</option><option value="keep" ${r.xdec==='keep'?'selected':''}>${r.kind==='out'?'Saída':'Entrada'} normal</option></select></div>`; })()
+        : r.similar?`<div class="flex flex-col gap-1"><span class="chip low" title="Mesmo valor (ou quase) e data próxima">parece já lançado: “${esc(r.similar.name)}” · dia ${r.similar.day}</span><select class="inp" data-rd="${i}" style="padding:4px 6px"><option value="merge" ${r.decision==='merge'?'selected':''}>Mesclar com o existente</option><option value="import" ${r.decision==='import'?'selected':''}>Importar mesmo assim</option></select></div>`:r.dup?'<span class="chip low">já importado</span>':r.payment?'<span class="chip low">pagamento da fatura</span>':r.match?`<span class="chip ok" title="Marca o previsto como ${r.kind==='in'?'recebido':'pago'}">concilia “${esc(r.match.name)}”</span>`:`<span class="chip">novo · ${r.done?(r.kind==='in'?'recebido':'pago'):'previsto'}</span>`}</td>
     </tr>`).join('')}</tbody></table></div>
     <div class="flex flex-wrap items-center justify-between gap-2">
       <span class="sub">${n} selecionados · ${nm} conciliam com o que já estava lançado (sem duplicar)${nmerge?` · ${nmerge} ${nmerge===1?'parece repetido e será mesclado':'parecem repetidos e serão mesclados'}`:''}</span>
@@ -2912,16 +3241,31 @@ function renderPreview(){
   box.querySelectorAll('[data-ri]').forEach(c=>c.onchange=()=>{ IM.rows[+c.dataset.ri].include=c.checked; renderPreview(); });
   box.querySelectorAll('[data-rc]').forEach(s=>s.onchange=()=>{ IM.rows[+s.dataset.rc].cat=s.value; renderPreview(); });
   box.querySelectorAll('[data-rw]').forEach(s=>s.onchange=()=>{ IM.rows[+s.dataset.rw].who=s.value; });
+  box.querySelectorAll('[data-rx]').forEach(s=>s.onchange=()=>{ const r=IM.rows[+s.dataset.rx]; r.xdec=s.value; if (r.xpartner!=null){ const q=IM.rows[r.xpartner]; q.xdec=s.value; q.include = s.value==='keep'; } renderPreview(); });
   box.querySelectorAll('[data-rd]').forEach(s=>s.onchange=()=>{ const r=IM.rows[+s.dataset.rd]; r.decision=s.value; r.include = s.value==='import'; renderPreview(); });
   $('#i-go').onclick=doImport;
 }
 function doImport(){
-  let created=0, matched=0;
+  let created=0, matched=0, fats=0, xfers=0;
   // linhas marcadas como "Mesclar com o existente": não viram lançamento novo; o existente passa a contar como pago
   for (const r of IM.rows.filter(x=>x.similar && x.decision==='merge')){ if (r.done) S.status[r.similar.key]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; } const touched=new Set(IM.rows.map(r=>r.accId));
   for (const r of IM.rows.filter(x=>x.include)){
     const a=accById(r.accId||IM.accId);
     if (r.match){ if (r.done) S.status[r.match.key]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; continue; }
+    if (r.fatPay){ const c=accById(r.fatPay.cardId), k=c.id+'|'+r.fatPay.m, prev=(S.faturas||{})[k];
+      const paid = prev && prev.src!=='manual' && prev.keys && prev.keys.includes(r.importKey) ? prev.paid : r2((prev&&prev.src!=='manual'?prev.paid:0)+r.amount);
+      // pagou o total ou mais: fatura paga. Pagou menos: o resto vai para o mês seguinte.
+      setFatPayment(c, r.fatPay.m, r.fatPay.total>0 ? Math.min(paid, r.fatPay.total) : paid, 0, r.fatPay.from, 'import');
+      S.faturas[k].keys = [...new Set([...(prev&&prev.keys||[]), r.importKey])];
+      if (r.fatPay.total>0 && paid>=r.fatPay.total-0.004) markFat(c, r.fatPay.m, true);
+      (S.imported=S.imported||{})[r.importKey]=1; fats++; continue; }
+    if (r.xdec==='transfer' && r.xfer){ const ex=S.entries.find(x=>x.id===r.xfer.entryId);
+      if (ex){ const tmp={id:'tmp', accountId:a.id, amount:r.amount, day:r.day, importKey:r.importKey};
+        const t = r.kind==='out' ? mergeXfer({...tmp, kind:'out'}, ex, r.m) : mergeXfer(ex, {...tmp, kind:'in'}, r.m);
+        if (r.done) S.status[t.id+'|'+r.m]=true; (S.imported=S.imported||{})[r.importKey]=1; xfers++; continue; } }
+    if (r.xdec==='transfer' && r.xpartner!=null){ const q=IM.rows[r.xpartner], f=r.kind==='out'?r:q, t=r.kind==='out'?q:r;
+      const e={id:uid(), kind:'transfer', type:'single', name:'Transferência '+(accById(f.accId)?.name||'')+' → '+(accById(t.accId)?.name||''), start:r.m, day:r.day, amount:r.amount, fromId:f.accId, toId:t.accId, accountId:null, importKey:r.importKey, dayRule:'fixed'};
+      S.entries.push(e); if (r.done) S.status[e.id+'|'+r.m]=true; (S.imported=S.imported||{})[r.importKey]=1; (S.imported)[q.importKey]=1; xfers++; continue; }
     const other = r.kind==='out' && r.who!=='me';
     const e={id:uid(), kind:r.kind, type:'single', name:r.desc, start:r.m, day:r.day, amount:r.amount, accountId:a.id, importKey:r.importKey};
     if (r.kind==='out'){ e.cat=r.cat; e.method=a.kind==='card'?'Cartão':'Débito'; e.whoUsed=other?'other':'me'; e.whoName=other?r.who:''; }
@@ -2930,7 +3274,7 @@ function doImport(){
   for (const id of touched){ const a=accById(id); if (!a) continue; if (a.kind==='card') a.reviewed[CUR]=true; a.lastSync=TODAY_ISO; }
   if (IM.of){ S.settings.of = {...(S.settings.of||{}), lastSync: TODAY_ISO}; }
   { const early=earliestStart(S.entries); if (early && early<S.settings.baseMonth){ S.settings.baseMonth=early; setTimeout(()=>toast(`Sua conta agora começa em ${mLabel(early)}, mês do lançamento mais antigo. Confira o saldo inicial em Ajustes.`), 2900); } }
-  commit(); close(); toast(`${created} novos, ${matched} conciliados com o previsto`);
+  commit(); close(); toast(`${created} novos, ${matched} conciliados com o previsto`+(fats?`, ${fats} ${fats===1?'baixa':'baixas'} de fatura`:'')+(xfers?`, ${xfers} ${xfers===1?'transferência':'transferências'}`:''));
 }
 
 

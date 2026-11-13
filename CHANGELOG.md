@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v19 | 13/11/2026 | Transferência entre contas próprias (não conta como entrada nem saída), status Pendente ou Pago no lançamento, faturas de cartão com baixa total ou parcial, saldo em aberto no mês seguinte e juros opcionais; importação dá baixa na fatura em vez de ignorar o pagamento |
 | v18 | 13/11/2026 | A IA lê prints em JPG e PNG (até 8 de uma vez), além de PDF |
 | v17 | 11/11/2026 | Login novo: cabe na tela do celular, abas Entrar e Criar conta, "Esqueci minha senha" como link |
 | v16 | 11/11/2026 | Movimento suave em todo clique; importação de faturas em 3 etapas com resumo, barras por bloco e tabela nova; celular minimalista |

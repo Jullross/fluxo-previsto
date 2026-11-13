@@ -25,6 +25,7 @@
 | Dívidas | Cadastro, conselheiro e simulação de quitação |
 | Desafio do mês | Meta de economia Leve, Ideal ou Hardcore, recalculada pela renda |
 | Cartões de família | Gasto de outra pessoa no seu cartão vira reembolso previsto |
+| Faturas e transferências | Fatura de cartão com baixa total ou parcial e saldo em aberto no mês seguinte; transferências entre contas próprias fora de entradas e saídas |
 | Importação | CSV, OFX, PDF e prints em JPG ou PNG (lidos por IA), com conciliação e aviso de duplicidade |
 | Open Finance | Sincronização pelo Meu Pluggy |
 | Conforto | Tema claro e escuro, modo privacidade, 5 telas com gesto no celular, funciona offline |

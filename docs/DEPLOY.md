@@ -4,7 +4,7 @@ Publicar uma versão nova é aumentar o número do cache no `sw.js` e enviar a p
 
 ## Publicar uma versão nova
 
-1. Troque `const CACHE = 'fluxo-previsto-v18'` no `sw.js` pelo número seguinte.
+1. Troque `const CACHE = 'fluxo-previsto-v19'` no `sw.js` pelo número seguinte.
 2. No Netlify, abra **Deploys** e arraste a pasta do projeto (ou ligue o site a este repositório).
 3. Na próxima abertura, o app instalado baixa a versão nova.
 
