@@ -7,7 +7,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // ID da dona do app: fica no segredo OWNER_ID do Supabase, nunca no código.
 const OWNER_ID = (Deno.env.get("OWNER_ID") ?? "").trim();
 const PLUGGY = "https://api.pluggy.ai";
-const ALLOWED = ["https://fluxo-previsto.netlify.app", "http://localhost:8000", "http://127.0.0.1:8000"];
+const ALLOWED = ["https://fluxo-previsto.netlify.app", "https://jullross.github.io", "http://localhost:8000", "http://127.0.0.1:8000"];
 
 function cors(req: Request) {
   const origin = req.headers.get("origin") ?? "";
