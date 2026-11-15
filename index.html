@@ -543,6 +543,10 @@ button:active:not(:disabled),.btn:active:not(:disabled),label.btn:active{transfo
 .collapse-y.shut{grid-template-rows:0fr;opacity:0;pointer-events:none}
 #m-import .drop{padding:30px 16px;gap:10px;border-color:var(--line-strong);background:color-mix(in srgb,var(--accent) 4%,transparent);border-radius:16px}
 .ikpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.ikpis.cardm{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ikpi .pair{display:flex;flex-direction:column;gap:6px}
+.ikpi .pair div{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ikpi .pair b{font-size:15px}
 @media (max-width:680px){.ikpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ikpi{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);min-width:0}
 .ikpi b{font-weight:500;font-size:18px;overflow-wrap:anywhere}
@@ -1536,6 +1540,8 @@ function migrate(d){
   d.challenge = d.challenge || {mode:'ritmo', months:{}}; d.challenge.months = d.challenge.months||{};
   for (const e of d.entries) if (e.kind==='out' && !e.cat) e.cat=inferCat(e);
   fixCardImports(d);
+  // v24: importações antigas de meses passados viram só registro (não mexem em saldo); feito uma vez, no mês em que a versão chegou
+  if (!d.settings.histFix){ for (const e of d.entries) if (e.importKey && e.type==='single' && e.start && e.start<CUR) e.hist=1; d.settings.histFix=CUR; }
   return d;
 }
 // Corrige compras de cartão que vieram do Open Finance antes da v21: estavam na data da compra, como pagas e sem parcelas.
@@ -1755,7 +1761,7 @@ function recStart(e){ return e.start; }
 // Mês em que a conta realmente começa: o mês de partida ou o lançamento mais antigo, o que vier antes.
 // Assim nada é recalculado para trás e os meses anteriores ao primeiro dado ficam em zero.
 function effBase(){ const b=S.settings.baseMonth, e=earliestStart(S.entries||[]); return e && e<b ? e : b; }
-function earliestStart(entries){ return entries.filter(e=>!e.virtual && !e.vault && !e.reimbursementFor && (e.type==='recurring'||e.type==='single') && e.start).map(e=>e.start).sort()[0] || null; }
+function earliestStart(entries){ return entries.filter(e=>!e.virtual && !e.vault && !e.reimbursementFor && !e.hist && (e.type==='recurring'||e.type==='single') && e.start).map(e=>e.start).sort()[0] || null; }
 function amountAt(e,m){ let a=0; for (const c of e.changes) if (c.from<=m) a=c.amount; return a; }
 function occurrences(m, entries, withXfer){
   const r=[];
@@ -1791,14 +1797,15 @@ function monthsRange(){
 function project(entries=allEntries()){
   const ms=monthsRange(), base=effBase(), OCC=ms.map(m=>occurrences(m, entries));
   // o saldo informado vale no início do mês de partida; os meses anteriores são reconstruídos para trás
-  let pre=0; ms.forEach((m,i)=>{ if (m<base) for (const x of OCC[i]) pre += x.e.kind==='in'?x.amount:-x.amount; });
+  let pre=0; ms.forEach((m,i)=>{ if (m<base) for (const x of OCC[i]) if (!x.e.hist) pre += x.e.kind==='in'?x.amount:-x.amount; });
   let bal = r2(S.settings.initialBalance - pre); const rows=[];
   for (let mi=0; mi<ms.length; mi++){
-    const m=ms[mi], o=OCC[mi]; const ins=o.filter(x=>x.e.kind==='in'), outs=o.filter(x=>x.e.kind==='out');
+    // lançamentos de meses passados vindos de importação (hist) são só registro: não mexem em saldo de dia nenhum
+    const m=ms[mi], hist=OCC[mi].filter(x=>x.e.hist), o=OCC[mi].filter(x=>!x.e.hist); const ins=o.filter(x=>x.e.kind==='in'), outs=o.filter(x=>x.e.kind==='out');
     const sum = a => r2(a.reduce((s,x)=>s+x.amount,0));
-    const own = outs.filter(x=>!x.third);
+    const own = outs.filter(x=>!x.third).concat(hist.filter(x=>x.e.kind==='out' && !x.third));
     const cat = {}; for (const k in CATS) cat[k]=sum(own.filter(x=>x.cat===k));
-    const row = {m, o, ins, outs, start:bal, cat, inTotal:sum(ins), reimbIn:sum(ins.filter(x=>x.reimb)), thirdOut:sum(outs.filter(x=>x.third)),
+    const row = {m, o, hist, ins, outs, start:bal, cat, inTotal:sum(ins), reimbIn:sum(ins.filter(x=>x.reimb)), thirdOut:sum(outs.filter(x=>x.third)),
       inDone:sum(ins.filter(x=>x.done)), outDone:sum(outs.filter(x=>x.done)), outTotal:sum(outs), debtOut:sum(outs.filter(x=>x.e.virtual))};
     row.ownIn = r2(row.inTotal-row.reimbIn); row.ownOut = r2(row.outTotal-row.thirdOut);
     const dim=daysIn(m), days=new Array(dim+1), dayIn=new Array(dim+1).fill(0), dayOut=new Array(dim+1).fill(0);
@@ -2417,8 +2424,10 @@ function renderLista(r){
   const outs = LF==='conta' ? r.outs.filter(o=>!isCardAcc(o.e.accountId)) : r.outs;
   const outSum = a => r2(a.reduce((s,o)=>s+o.amount,0)), doneSum = a => r2(a.filter(o=>o.done).reduce((s,o)=>s+o.amount,0));
   $('#out-sub').innerHTML = `<span class="num">${outs.filter(o=>o.e.fat!=='adj').length}</span> ${outs.length===1?'lançamento':'lançamentos'} · já saiu <span class="num">${fmt(doneSum(outs))}</span> de <span class="num">${fmt(outSum(outs))}</span>`;
-  $('#list-in').innerHTML = list(r.ins,'Nada a receber neste mês.');
-  $('#list-out').innerHTML = LF==='conta' ? list(outs,'Nada a pagar pela conta neste mês.') + (r.outs.length>outs.length?`<div class="px-4 py-3 sub" style="border-top:1px solid var(--line)">As compras no cartão estão em <button type="button" class="link-btn" data-lf-go="fat" style="color:var(--accent);font-weight:600">Faturas de Cartão</button>.</div>`:'') : listOutsGrouped(r,'Nada a pagar neste mês.');
+  const hIn=(r.hist||[]).filter(o=>o.e.kind==='in'), hOut=(r.hist||[]).filter(o=>o.e.kind==='out' && (LF!=='conta' || !isCardAcc(o.e.accountId)));
+  $('#list-in').innerHTML = list(r.ins.concat(hIn),'Nada a receber neste mês.');
+  const histOutHTML = hOut.map(o=>itemHTML(o)).join('');
+  $('#list-out').innerHTML = (LF==='conta' ? list(outs,'Nada a pagar pela conta neste mês.') + (r.outs.length>outs.length?`<div class="px-4 py-3 sub" style="border-top:1px solid var(--line)">As compras no cartão estão em <button type="button" class="link-btn" data-lf-go="fat" style="color:var(--accent);font-weight:600">Faturas de Cartão</button>.</div>`:'') : listOutsGrouped(r,'Nada a pagar neste mês.')) + histOutHTML;
 }
 $$('#lf-seg [data-lf]').forEach(b=>b.onclick=()=>{ LF=b.dataset.lf; pref('lf',LF); render(); animateIn($('#view-lista')); });
 function renderTabs(r){
@@ -2470,7 +2479,8 @@ function itemHTML(o, extraCls){
     if (o.reimb) extra.push(`<span class="tag fam">Reembolso</span>`);
     if (o.e.virtual) extra.push(`<span class="tag sim">Simulação de dívida</span>`);
     if (o.e.vault) extra.push(`<span class="tag vault">${ic('gem',11)} Cofre do desafio</span>`);
-    if (!o.done && o.m<=CUR && !o.e.vault && !o.e.virtual) extra.push(`<span class="tag pend">${isIn?'a receber':'pendente'}</span>`);
+    if (!o.done && o.m<=CUR && !o.e.vault && !o.e.virtual && !o.e.hist) extra.push(`<span class="tag pend">${isIn?'a receber':'pendente'}</span>`);
+    if (o.e.hist) extra.push(`<span class="tag" title="Lançamento de mês passado importado: fica só como registro">histórico · não altera o saldo</span>`);
     if (o.adj) extra.push(`<span class="tag adj ${o.adj.moved?'mv':''}">${ic(o.adj.kind==='ante'?'chevl2':o.adj.kind==='adia'?'chevr2':'calendar',12)} ${esc(o.adj.txt)}</span>`);
     return `<div class="item ${isIn?'k-in':'k-out'} ${o.done?'done':''} ${extraCls||''}">
       <button class="check ${o.done?'on':''} ${justToggled===k?'just':''}" data-toggle="${k}" aria-label="${lbl}" title="${lbl}">${check}</button>
@@ -3325,9 +3335,9 @@ function renderPreview(){
   const outFile = IM.rows.filter(r=>r.kind==='out').reduce((a,r)=>a+r.amount,0);
   box.innerHTML = `
     <div class="flex flex-col gap-4 enter">
-    <div class="ikpis">
-      ${card ? kp('Fechamento', dd(meta.fechamento) || (acc0&&acc0.closeDay?'dia '+acc0.closeDay:'—')) + kp('Vencimento', dd(meta.vencimento) || (acc0&&acc0.dueDay?'dia '+acc0.dueDay:'—')) : kp('Conta', esc(acc0?acc0.name:'—')) + kp('Linhas lidas', IM.rows.length)}
-      ${kp(card?'Total da fatura':'Saídas no arquivo', meta.total!=null?fmt(meta.total):fmt(outFile), '', 'focus', card?'valor cobrado nesta fatura':`só débitos · ${IM.rows.filter(r=>r.kind==='out').length} ${IM.rows.filter(r=>r.kind==='out').length===1?'saída':'saídas'}${IM.saldoRows?` · ${IM.saldoRows} ${IM.saldoRows===1?'linha de saldo ficou':'linhas de saldo ficaram'} de fora`:''}`)}
+    <div class="ikpis ${card?'cardm':''}">
+      ${card ? `<div class="ikpi"><span class="label">Fatura</span><div class="pair"><div><span class="sub">Fechamento</span><b class="num">${dd(meta.fechamento) || (acc0&&acc0.closeDay?'dia '+acc0.closeDay:'—')}</b></div><div><span class="sub">Vencimento</span><b class="num">${dd(meta.vencimento) || (acc0&&acc0.dueDay?'dia '+acc0.dueDay:'—')}</b></div></div></div>` : kp('Conta', esc(acc0?acc0.name:'—')) + kp('Linhas lidas', IM.rows.length)}
+      ${kp(card?(meta.total!=null?'Total da fatura':'Saídas no arquivo'):'Saídas no arquivo', meta.total!=null?fmt(meta.total):fmt(outFile), '', 'focus', card?(()=>{ const outs=IM.rows.filter(r=>r.kind==='out'), np=outs.filter(r=>r.parc).length; return `${outs.length} ${outs.length===1?'lançamento':'lançamentos'} · ${np} ${np===1?'parcelado':'parcelados'}${IM.saldoRows?` · ${IM.saldoRows} ${IM.saldoRows===1?'linha de saldo ficou':'linhas de saldo ficaram'} de fora`:''}`; })():`só débitos · ${IM.rows.filter(r=>r.kind==='out').length} ${IM.rows.filter(r=>r.kind==='out').length===1?'saída':'saídas'}${IM.saldoRows?` · ${IM.saldoRows} ${IM.saldoRows===1?'linha de saldo ficou':'linhas de saldo ficaram'} de fora`:''}`)}
       ${kp('Gastos selecionados', fmt(selSum), 'c-acc" id="ik-sel')}
     </div>
     ${saldo?`<div class="isaldo">
@@ -3399,11 +3409,11 @@ function doImport(){
     if (r.parc && r.kind==='out'){ const rest=r.parc.n-r.parc.k+1; delete e.amount;
       e = {...e, type:'installment', name:r.parc.base||r.desc, n:rest, total:r2(r.amount*rest), k0:r.parc.k, ofN:r.parc.n, dayRule:'fixed'}; }
     if (r.kind==='out'){ e.cat=r.cat; e.method=a.kind==='card'?'Cartão':'Débito'; e.whoUsed=other?'other':'me'; e.whoName=other?r.who:''; }
+    if (r.m < CUR){ e.hist=1; S.status[e.id+'|'+r.m]=true; }
     S.entries.push(e); if (r.done) S.status[e.id+'|'+r.m]=true; syncReimb(e); created++;
   }
   for (const id of touched){ const a=accById(id); if (!a) continue; if (a.kind==='card') a.reviewed[CUR]=true; a.lastSync=TODAY_ISO; }
   if (IM.of){ S.settings.of = {...(S.settings.of||{}), lastSync: TODAY_ISO}; }
-  { const early=earliestStart(S.entries); if (early && early<S.settings.baseMonth){ S.settings.baseMonth=early; setTimeout(()=>toast(`O histórico agora vai desde ${mLabel(early)}. O seu saldo de hoje não mudou.`), 2900); } }
   const saldoHoje = IM.saldoOn && IM.saldo ? (isFinite(IM.saldoV)&&IM.saldoV!=null ? IM.saldoV : IM.saldo.value) : null;
   commit();
   if (saldoHoje!=null) setTodayBalance(saldoHoje);

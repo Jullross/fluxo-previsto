@@ -42,6 +42,7 @@ O app inteiro roda no navegador, num único `index.html` em JavaScript puro, sem
 3. Em cada mês: saldo inicial = saldo final do mês anterior; entradas e saídas são aplicadas dia a dia.
 4. Cada lançamento cai no dia ajustado por `resolveDay()`: dia fixo, 5º dia útil, 5º dia útil CLT, último dia útil, ou antecipar/adiar em feriado e fim de semana.
 5. "Tenho hoje" conta só o que já foi marcado como pago ou recebido.
+5b. **Histórico importado** (`hist`): lançamentos importados de meses anteriores ao atual ficam só como registro. Aparecem na lista e na divisão por categoria, mas o motor não os usa em saldo de dia ou de mês, nem para recuar a data de início da conta.
 5a. **Âncora do saldo** (`settings.anchor = {m, start}`): o início do mês em que você informou o saldo real fica fixo. O motor calcula normalmente e desloca todos os meses pela diferença, então lançamentos de meses anteriores mudam só o histórico, nunca o saldo de hoje. A âncora muda ao salvar o saldo em Ajustes, ao preencher "Quanto você tem hoje" ou ao usar o saldo de um extrato importado.
 6. O teto seguro por dia é o menor entre: o que dá para gastar até o próximo recebimento e o que dá até o fim do mês sem nenhum dia ficar negativo.
 7. **Transferências** (`kind: "transfer"`) ficam fora de `occurrences()`: não entram em entradas, saídas, blocos nem no teto. Aparecem na lista e no calendário com ⇄.

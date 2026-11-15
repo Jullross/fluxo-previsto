@@ -45,6 +45,7 @@ RLS ligado, com 4 políticas (lê, cria, atualiza, apaga), todas com `auth.uid()
 | `whoUsed`, `whoName` | Gasto de outra pessoa no seu cartão |
 | `reimbursementFor` | Liga o reembolso previsto ao gasto de origem |
 | `importKey` | Origem na importação |
+| `hist` | Importado de um mês passado: só registro, não entra no saldo |
 
 ## Exemplo mínimo
 
