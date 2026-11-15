@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v28 | 15/11/2026 | Simulador "No cartão": escolhe o cartão e 1x a 12x, a compra cai na fatura certa pelo fechamento, mostra cada fatura antes e depois, e avisa que o saldo de hoje não muda até o vencimento |
 | v27 | 15/11/2026 | Editar lançamento permite trocar o tipo (único → recorrente ou parcelado e vice-versa); recorrente com dia ou valor que variam é conciliado pelo nome (até 15 dias e 15%) e a previsão segue o valor novo |
 | v26 | 15/11/2026 | Fatura em PDF ou print: todos os lançamentos entram no vencimento do documento (não na data da compra); parcelas lidas da IA ("7/7", "5/12") viram parceladas; fechamento e vencimento do cartão atualizados pelo documento |
 | v25 | 15/11/2026 | Conferir saldo com os bancos: saldo de cada conta (digitado, do Open Finance ou do extrato importado), soma, diferença para o app e ajuste com um toque; aviso no sino quando não bate |

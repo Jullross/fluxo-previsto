@@ -1085,11 +1085,11 @@ body:not(.locked) #auth{display:none!important}
           <label class="field sg-amt"><span>Valor total</span><input class="inp num sim-big" id="sim-amount" inputmode="decimal" placeholder="0,00" autocomplete="off"></label>
           <div class="sim-chips sg-chips" role="group" aria-label="Somar valor"><button type="button" data-add="20">+R$ 20</button><button type="button" data-add="50">+R$ 50</button><button type="button" data-add="100">+R$ 100</button><button type="button" data-add="0" class="clr">Limpar</button></div>
           <div class="field sg-mode"><span>Forma</span>
-            <div class="seg seg-lg" id="sim-mode"><button type="button" data-v="now" class="on">À vista / Pix</button><button type="button" data-v="parc">Parcelado</button></div>
+            <div class="seg seg-lg" id="sim-mode"><button type="button" data-v="now" class="on">À vista / Pix</button><button type="button" data-v="parc">No cartão</button></div>
           </div>
           <div class="sim-live sg-live" id="sim-live" aria-live="polite"></div>
-          <div class="field sg-n" id="sim-n-wrap" hidden><span>Parcelas</span><div class="pchips" id="sim-nchips" role="group" aria-label="Parcelas"><button type="button" data-n="2" class="">2x</button><button type="button" data-n="3" class="">3x</button><button type="button" data-n="4" class="on">4x</button><button type="button" data-n="6" class="">6x</button><button type="button" data-n="10" class="">10x</button><button type="button" data-n="12" class="">12x</button></div></div>
-          <label class="sr-only"><span>Parcelas</span><select class="inp" id="sim-n" tabindex="-1"><option value="2">2x</option><option value="3">3x</option><option value="4" selected>4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></label>
+          <div class="field sg-n" id="sim-n-wrap" hidden><span>Cartão e parcelas</span><select class="inp" id="sim-card" aria-label="Cartão"></select><div class="pchips" id="sim-nchips" role="group" aria-label="Parcelas"><button type="button" data-n="1" class="">1x</button><button type="button" data-n="2" class="">2x</button><button type="button" data-n="3" class="">3x</button><button type="button" data-n="4" class="on">4x</button><button type="button" data-n="6" class="">6x</button><button type="button" data-n="10" class="">10x</button><button type="button" data-n="12" class="">12x</button></div></div>
+          <label class="sr-only"><span>Parcelas</span><select class="inp" id="sim-n" tabindex="-1"><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option><option value="4" selected>4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></label>
           <div class="field sg-cat"><span>Classificação</span><div class="catgrid" id="sim-catgrid" role="group" aria-label="Classificação"></div><select class="sr-only" id="sim-cat" tabindex="-1" aria-hidden="true"></select></div>
           <label class="field sg-desc"><span>Descrição (opcional)</span><input class="inp" id="sim-name" placeholder="Ex.: Jantar, tênis, presente" autocomplete="off"></label>
         </div>
@@ -2248,8 +2248,10 @@ $('#sim-cat').innerHTML = catOptions(); $('#sim-cat').value='estilo';
 $$('#sim-mode button').forEach(b=>b.onclick=()=>{ simMode=b.dataset.v; $$('#sim-mode button').forEach(x=>x.classList.toggle('on',x===b));
   $('#sim-n-wrap').hidden = simMode!=='parc'; if (simMode==='parc' && $('#sim-cat').value==='estilo') $('#sim-cat').value='futuro'; if (simMode==='now' && $('#sim-cat').value==='futuro') $('#sim-cat').value='estilo'; renderSim(); });
 ['#sim-amount','#sim-n','#sim-cat'].forEach(s=>$(s).addEventListener('input',renderSim));
+$('#sim-card').addEventListener('change',renderSim);
 $('#sim-n').addEventListener('change',renderSim);
-$$('#sim-nchips [data-n]').forEach(b=>b.onclick=()=>{ $('#sim-n').value=b.dataset.n; $$('#sim-nchips [data-n]').forEach(x=>x.classList.toggle('on',x===b)); renderSim(); });
+$$('#sim-nchips [data-n]').forEach(b=>b.onclick=()=>{ $('#sim-n').value=b.dataset.n; $$('#sim-nchips [data-n]').forEach(x=>x.classList.toggle('on',x===b));
+  const c=$('#sim-cat'); if (+b.dataset.n===1 && c.value==='futuro') c.value='estilo'; if (+b.dataset.n>=2 && c.value==='estilo') c.value='futuro'; renderSim(); });
 function paintCatGrid(){
   const g=$('#sim-catgrid'); if (!g) return; const v=$('#sim-cat').value;
   g.innerHTML = Object.entries(CATS).map(([k,c])=>`<button type="button" data-cat="${k}" class="${k===v?'on':''}" style="--cc:${c.color}" aria-pressed="${k===v}"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CAT_IC[k]||''}</svg><span>${CAT_SHORT[k]||c.label}</span></button>`).join('');
@@ -2260,15 +2262,40 @@ $$('.sim-chips [data-add]').forEach(b=>b.onclick=()=>{
   if (!add){ inp.value=''; renderSim(); inp.focus({preventScroll:true}); return; }
   const cur=parseMoney(inp.value); inp.value = moneyIn((isFinite(cur)?cur:0)+add); renderSim();
 });
+function fillSimCards(){
+  const sel=$('#sim-card'); if (!sel) return; const cards=S.accounts.filter(a=>a.kind==='card');
+  const sig=cards.map(c=>c.id+c.name).join('|'); if (sel.dataset.sig===sig) return;
+  const cur=sel.value; sel.dataset.sig=sig;
+  sel.innerHTML = cards.length ? cards.map(c=>`<option value="${c.id}">${esc(c.name)}${c.dueDay?` · vence dia ${c.dueDay}`:''}</option>`).join('') : '<option value="">Nenhum cartão cadastrado</option>';
+  if (cards.some(c=>c.id===cur)) sel.value=cur;
+}
 function simEntry(){
   const amt=parseMoney($('#sim-amount').value), n=parseInt($('#sim-n').value)||0;
   if (!(amt>0)) return null;
-  if (simMode==='parc' && !(n>=2 && n<=48)) return null;
-  const name=$('#sim-name').value.trim() || (simMode==='parc'?'Compra parcelada':'Gasto do dia');
+  if (simMode==='parc' && !(n>=1 && n<=48)) return null;
+  const name=$('#sim-name').value.trim() || (simMode==='parc'?(n>=2?'Compra parcelada':'Compra no cartão'):'Gasto do dia');
   const base={id:'__sim', kind:'out', name, day:TODAY, start:CUR, cat:$('#sim-cat').value};
-  return simMode==='parc' ? {...base, type:'installment', n, total:amt, method:'Cartão'} : {...base, type:'single', amount:amt, method:'Pix'};
+  if (simMode!=='parc') return {...base, type:'single', amount:amt, method:'Pix'};
+  // no cartão: a compra de hoje cai na fatura certa (pelo fechamento) e só sai da conta no vencimento
+  const c=accById($('#sim-card').value), due = c && c.kind==='card' ? cardFat(c, TODAY_ISO, null) : null;
+  const card={...base, method:'Cartão', accountId:c?c.id:null, start:due?due.m:CUR, day:due?due.day:TODAY};
+  return n>=2 ? {...card, type:'installment', n, total:amt} : {...card, type:'single', amount:amt};
+}
+// Como ficam as faturas do cartão com a compra simulada
+function simCardHTML(e, Ps){
+  const c=accById(e.accountId); if (!c) return '';
+  const n=e.type==='installment'?e.n:1, months=[]; for (let i=0;i<Math.min(n,6);i++) months.push(addM(e.start,i));
+  const est = !c.closeDay || !c.dueDay;
+  const rows=months.map(m=>{ const a=P.find(r=>r.m===m), b=Ps.find(r=>r.m===m); if (!a||!b) return '';
+    const fa=fatInfo(a,c).total, fb=fatInfo(b,c).total;
+    return `<tr><td>${mLabel(m)}</td><td class="num">${fmt(fa)}</td><td class="num"><b>${fmt(fb)}</b></td><td class="num c-out">+${fmt(r2(fb-fa))}</td></tr>`; }).join('');
+  return `<div class="cascade"><div class="label" style="margin-bottom:6px">Faturas do ${esc(c.name)}</div>
+    <div class="sub" style="margin-bottom:6px">Comprando hoje, cai na fatura de <b>${mLabel(e.start)}</b>, que vence dia ${e.day}${c.closeDay?` (o cartão fecha dia ${c.closeDay})`:''}.${est?' Fechamento estimado: cadastre o dia de fechamento em Bancos para ficar exato.':''}</div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fatura</th><th>Hoje</th><th>Com a compra</th><th>Diferença</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${n>6?`<div class="sub" style="margin-top:4px">E mais ${n-6} ${n-6===1?'fatura':'faturas'} com parcela depois disso.</div>`:''}</div>`;
 }
 function renderSim(){
+  fillSimCards();
   const out=$('#sim-out'), btn=$('#sim-confirm'); const e=simEntry();
   paintCatGrid();
   const hb = P.length ? health(P) : null;
@@ -2291,10 +2318,13 @@ function renderSim(){
   }
   const lvA=LV[ha.level];
   out.innerHTML = `
-    <div><span class="ic muted">1</span><span>Seu saldo amanhã cairá de <span class="num">${fmt(balB)}</span> para <span class="num ${balA<0?'c-out':''}">${fmt(balA)}</span>.</span></div>
-    <div><span class="ic muted">2</span><span>Seu teto diário seguro cairá de <span class="num">${fmt(r2(hb.teto))}/dia</span> para <span class="num ${ha.teto<=0?'c-out':''}">${fmt(r2(ha.teto))}/dia</span>.</span></div>
+    ${e.method==='Cartão' && (e.start!==CUR || e.day>TODAY)
+      ? `<div><span class="ic muted">1</span><span>Hoje o saldo não muda: no cartão, a compra só sai da conta no vencimento da fatura, em <b>${dLabel(e.start,e.day)}</b>.</span></div>`
+      : `<div><span class="ic muted">1</span><span>Seu saldo amanhã cairá de <span class="num">${fmt(balB)}</span> para <span class="num ${balA<0?'c-out':''}">${fmt(balA)}</span>.</span></div>`}
+    <div><span class="ic muted">2</span><span>${Math.abs(r2(hb.teto)-r2(ha.teto))<0.005 ? `Seu teto diário seguro continua <span class="num">${fmt(r2(hb.teto))}/dia</span>${e.method==='Cartão'?': a fatura só vence depois do seu próximo recebimento':''}.` : `Seu teto diário seguro cairá de <span class="num">${fmt(r2(hb.teto))}/dia</span> para <span class="num ${ha.teto<=0?'c-out':''}">${fmt(r2(ha.teto))}/dia</span>.`}</span></div>
     <div><span class="ic muted">3</span><span>Impacto nos próximos meses: ${impact}</span></div>
-    <div><span class="ic"><i class="dot" style="background:${lvA.c}"></i></span><span class="sub" style="font-size:13px">Termômetro depois do gasto: <b style="color:${lvA.c}">${lvA.t}</b>${e.type==='installment'?` · ${e.n} × ${fmt(Math.floor(e.total*100/e.n)/100)}, a 1ª parcela entra neste mês`:''}</span></div>
+    <div><span class="ic"><i class="dot" style="background:${lvA.c}"></i></span><span class="sub" style="font-size:13px">Termômetro depois do gasto: <b style="color:${lvA.c}">${lvA.t}</b>${e.type==='installment'?` · ${e.n} × ${fmt(Math.floor(e.total*100/e.n)/100)}, a 1ª parcela entra ${e.start===CUR?'neste mês':'na fatura de '+mLabel(e.start)}`:''}</span></div>
+    ${e.method==='Cartão' && e.accountId ? simCardHTML(e, Ps) : ''}
     ${e.type==='installment' ? cascadeHTML(e, Ps) : ''}`;
   btn.disabled=false;
   paintLight(ha, e.type==='installment' ? `${fmt(e.total)} em ${e.n}x` : fmt(e.amount));
@@ -2302,9 +2332,9 @@ function renderSim(){
 $('#sim-confirm').onclick=()=>{
   const e=simEntry(); if(!e) return;
   const id=uid(); S.entries.push({...e, id});
-  if (e.type==='single') S.status[id+'|'+CUR]=true;
+  if (e.type==='single' && e.method!=='Cartão') S.status[id+'|'+CUR]=true;
   $('#sim-amount').value=''; $('#sim-name').value=''; SIM_P=null; $$('[data-simbadge]').forEach(b=>b.hidden=true); document.body.classList.remove('simulating');
-  sel=CUR; selDay=TODAY; commit(); toast('Gasto lançado em '+dLabel(CUR,TODAY));
+  sel=CUR; selDay=TODAY; commit(); toast(e.method==='Cartão' && e.accountId ? `Compra lançada na fatura de ${mLabel(e.start)} do ${accById(e.accountId)?.name||'cartão'}` : 'Gasto lançado em '+dLabel(CUR,TODAY));
 };
 
 // Prévia ao vivo: enquanto há um valor no simulador, o painel do dia, a consulta detalhada e o gráfico mostram o cenário simulado.
@@ -2321,7 +2351,7 @@ function applySimPreview(){
   paintStripSim();
 }
 function cascadeHTML(e, Ps){
-  const months=[]; for (let i=0;i<Math.min(e.n,6);i++) months.push(addM(CUR,i));
+  const months=[]; for (let i=0;i<Math.min(e.n,6);i++) months.push(addM(e.start||CUR,i));
   const per=Math.floor(e.total*100/e.n)/100;
   const rows=months.map(m=>{ const a=P.find(r=>r.m===m), b=Ps.find(r=>r.m===m); if (!a||!b) return '';
     return `<tr><td>${mLabel(m)}</td><td class="num c-parc">−${fmt(per)}</td><td class="num">${fmt(a.end)}</td><td class="num ${b.end<0?'c-out':''}">${fmt(b.end)}</td></tr>`; }).join('');
