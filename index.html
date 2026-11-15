@@ -546,6 +546,16 @@ button:active:not(:disabled),.btn:active:not(:disabled),label.btn:active{transfo
 @media (max-width:680px){.ikpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ikpi{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);min-width:0}
 .ikpi b{font-weight:500;font-size:18px;overflow-wrap:anywhere}
+.iimpact{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:stretch}
+.iimpact .arrow{display:grid;place-items:center;color:var(--faint)}
+.iimpact .ikpi.after{border-color:color-mix(in srgb,var(--go-text) 45%,var(--line));background:color-mix(in srgb,var(--go) 8%,var(--bg))}
+.iimpact .ikpi.after b{color:var(--go-text);font-size:22px}
+.iimpact .ikpi.after.neg{border-color:color-mix(in srgb,var(--stop-text) 55%,var(--line));background:color-mix(in srgb,var(--stop) 9%,var(--bg))}
+.iimpact .ikpi.after.neg b{color:var(--stop-text)}
+.iimpact .delta{font-size:12.5px;font-family:var(--f-num);color:var(--muted)}
+.ik-flash{animation:ikFlash .45s var(--ease,ease)}
+@keyframes ikFlash{0%{opacity:.35;transform:translateY(2px)}100%{opacity:1;transform:none}}
+@media (max-width:560px){.iimpact{grid-template-columns:minmax(0,1fr)}.iimpact .arrow{transform:rotate(90deg);height:18px}}
 .iblocks{display:flex;flex-direction:column;gap:10px}
 .ibrow{display:grid;grid-template-columns:170px minmax(0,1fr) 120px;gap:12px;align-items:center;font-size:14px}
 .ibrow > span:first-child{display:flex;align-items:center;gap:8px}
@@ -3254,6 +3264,52 @@ function buildRows(raw){
       if (y.accId!==x.accId && y.kind!==x.kind && Math.abs(y.amount-x.amount)<0.005 && y.date===x.date){ x.xpartner=j; y.xpartner=i; x.xdec=y.xdec='transfer'; y.include=false; x.include=true; break; } } }
   renderPreview();
 }
+// Números da revisão a partir das linhas marcadas (usados no primeiro desenho e a cada marcar/desmarcar)
+function importStats(){
+  const fat = r => r.fatPay || (r.xdec==='transfer' && (r.xfer || r.xpartner!=null));
+  const selOut=IM.rows.filter(r=>(r.include||(r.similar&&r.decision==='merge'))&&r.kind==='out'&&!fat(r));
+  const byCat={}; for (const k in CATS) byCat[k]=selOut.filter(r=>!r.match&&r.cat===k).reduce((a,r)=>a+r.amount,0);
+  const nmerge=IM.rows.filter(r=>r.similar&&r.decision==='merge').length;
+  return {selSum:selOut.reduce((a,r)=>a+r.amount,0), byCat, nmerge, n:IM.rows.filter(r=>r.include).length+nmerge, nm:IM.rows.filter(r=>r.include&&r.match).length+nmerge};
+}
+// Impacto no saldo: simula a importação das linhas marcadas no próprio motor e compara o saldo do fim do mês da fatura
+function importImpact(){
+  const sel=IM.rows.filter(r=>r.include);
+  const cnt={}; for (const r of (sel.length?sel:IM.rows)) cnt[r.m]=(cnt[r.m]||0)+1;
+  const m = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||(a<b?-1:1))[0] || sel;
+  const removed=new Set(), extra=[];
+  for (const r of sel){
+    if (r.match || r.fatPay || r.dup) continue;
+    if (r.xdec==='transfer' && r.xfer){ removed.add(r.xfer.entryId); continue; }
+    if (r.xdec==='transfer' && r.xpartner!=null) continue;
+    const e={id:'imp_'+extra.length, kind:r.kind, type:'single', name:r.desc, start:r.m, day:r.day, amount:r.amount, accountId:r.accId, cat:r.kind==='out'?r.cat:undefined};
+    if (r.parc && r.kind==='out'){ const rest=r.parc.n-r.parc.k+1; delete e.amount; Object.assign(e,{type:'installment', n:rest, total:r2(r.amount*rest), k0:r.parc.k, ofN:r.parc.n}); }
+    extra.push(e);
+  }
+  const before=P.find(x=>x.m===m);
+  if (!before) return null;
+  const after = (extra.length||removed.size) ? project([...allEntries().filter(e=>!removed.has(e.id)), ...extra]).find(x=>x.m===m) : before;
+  const later = extra.some(e=>e.type==='installment' && e.n>1);
+  return {m, before:before.end, after:after?after.end:before.end, later};
+}
+function updateImpactUI(flash){
+  const box=$('#i-preview'); if (!box || !$('#ik-after')) return;
+  const st=importStats(), im=importImpact();
+  const set=(id,v)=>{ const el=$(id); if (!el) return; if (el.textContent!==v){ el.textContent=v; if (flash){ el.classList.remove('ik-flash'); void el.offsetWidth; el.classList.add('ik-flash'); } } };
+  set('#ik-sel', fmt(st.selSum));
+  const maxCat=Math.max(1,...Object.values(st.byCat));
+  for (const k in CATS){ const b=box.querySelector(`[data-bar="${k}"]`); if (b) b.style.width=(st.byCat[k]/maxCat*100).toFixed(1)+'%'; const v=box.querySelector(`[data-barv="${k}"]`); if (v) v.textContent=fmt(st.byCat[k]); }
+  if (im){
+    set('#ik-mlabel', 'Impacto no saldo de '+mFull(im.m).toLowerCase());
+    set('#ik-before', fmt(im.before)); set('#ik-after', fmt(im.after));
+    const d=r2(im.after-im.before), card=$('#ik-after').closest('.ikpi');
+    card.classList.toggle('neg', im.after<0);
+    set('#ik-delta', (d===0?'sem mudança no saldo':(d<0?'−':'+')+fmt(Math.abs(d))+' com os lançamentos marcados')+(im.later?' · as parcelas seguintes também entram nos próximos meses':''));
+    set('#ik-after-cap', im.after<0 ? 'Saldo do mês fica negativo' : 'Novo saldo projetado');
+  }
+  set('#i-sum', `${st.n} selecionados · ${st.nm} conciliam com o que já estava lançado (sem duplicar)${st.nmerge?` · ${st.nmerge} ${st.nmerge===1?'parece repetido e será mesclado':'parecem repetidos e serão mesclados'}`:''}`);
+  const go=$('#i-go'); if (go){ go.disabled=!st.n; go.textContent=`Importar ${st.n} ${st.n===1?'lançamento':'lançamentos'}`; }
+}
 function renderPreview(){
   const multi=new Set(IM.rows.map(r=>r.accId)).size>1, isCard=r=>{ const x=accById(r.accId); return x&&x.kind==='card'; };
   const card=IM.rows.some(isCard), ppl=knownPeople(), box=$('#i-preview');
@@ -3270,9 +3326,17 @@ function renderPreview(){
     <div class="ikpis">
       ${card ? kp('Fechamento', dd(meta.fechamento) || (acc0&&acc0.closeDay?'dia '+acc0.closeDay:'—')) + kp('Vencimento', dd(meta.vencimento) || (acc0&&acc0.dueDay?'dia '+acc0.dueDay:'—')) : kp('Conta', esc(acc0?acc0.name:'—')) + kp('Linhas lidas', IM.rows.length)}
       ${kp(card?'Total da fatura':'Saídas no arquivo', meta.total!=null?fmt(meta.total):fmt(IM.rows.filter(r=>r.kind==='out').reduce((a,r)=>a+r.amount,0)))}
-      ${kp('Gastos selecionados', fmt(selSum), 'c-acc')}
+      ${kp('Gastos selecionados', fmt(selSum), 'c-acc" id="ik-sel')}
     </div>
-    <div class="iblocks">${Object.entries(CATS).map(([k,c])=>`<div class="ibrow"><span><i class="dot" style="background:${c.color}"></i>${c.label}</span><div class="itrack"><i style="width:${(byCat[k]/maxCat*100).toFixed(1)}%;background:${c.color}"></i></div><span class="num">${fmt(byCat[k])}</span></div>`).join('')}</div>
+    <div class="flex flex-col gap-2">
+      <span class="label" id="ik-mlabel">Impacto no saldo do mês</span>
+      <div class="iimpact">
+        <div class="ikpi"><span class="label">Saldo previsto antes</span><b class="num" id="ik-before">—</b><span class="sub" style="font-size:12px">fim do mês, como está hoje no app</span></div>
+        <div class="arrow" aria-hidden="true">${ic('arrow',18)}</div>
+        <div class="ikpi after"><span class="label" id="ik-after-cap">Novo saldo projetado</span><b class="num" id="ik-after">—</b><span class="delta" id="ik-delta"></span></div>
+      </div>
+    </div>
+    <div class="iblocks">${Object.entries(CATS).map(([k,c])=>`<div class="ibrow"><span><i class="dot" style="background:${c.color}"></i>${c.label}</span><div class="itrack"><i data-bar="${k}" style="width:${(byCat[k]/maxCat*100).toFixed(1)}%;background:${c.color};transition:width .35s var(--ease,ease)"></i></div><span class="num" data-barv="${k}">${fmt(byCat[k])}</span></div>`).join('')}</div>
     <div class="sub">${card?'Compras do cartão entram na fatura em que o banco cobra e ficam pendentes até a fatura ser paga. Parceladas projetam as próximas parcelas, que são conciliadas quando chegarem do banco.':'Lançamentos entram na data do extrato; os já vencidos ficam como pagos ou recebidos.'} O que já estava previsto é conciliado, sem duplicar.</div>
     <div class="tbl-wrap itbl"><table class="tbl"><thead><tr><th></th>${multi?'<th>Conta</th>':''}<th>Data</th><th>Descrição</th><th>Valor</th><th>Entra em</th><th>Classificação</th>${card?'<th>Quem usou?</th>':''}<th>Situação</th></tr></thead><tbody>
     ${IM.rows.map((r,i)=>`<tr class="${r.include?'':'off'}" style="animation-delay:${Math.min(i,20)*30}ms">
@@ -3295,16 +3359,17 @@ function renderPreview(){
         : r.similar?`<div class="flex flex-col gap-1"><span class="chip low" title="Mesmo valor (ou quase) e data próxima">parece já lançado: “${esc(r.similar.name)}” · dia ${r.similar.day}</span><select class="inp" data-rd="${i}" style="padding:4px 6px"><option value="merge" ${r.decision==='merge'?'selected':''}>Mesclar com o existente</option><option value="import" ${r.decision==='import'?'selected':''}>Importar mesmo assim</option></select></div>`:r.dup?'<span class="chip low">já importado</span>':r.payment?'<span class="chip low">pagamento da fatura</span>':r.match?`<span class="chip ok" title="Marca o previsto como ${r.kind==='in'?'recebido':'pago'}">concilia “${esc(r.match.name)}”</span>`:`<span class="chip">novo · ${r.done?(r.kind==='in'?'recebido':'pago'):'previsto'}</span>`}</td>
     </tr>`).join('')}</tbody></table></div>
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <span class="sub">${n} selecionados · ${nm} conciliam com o que já estava lançado (sem duplicar)${nmerge?` · ${nmerge} ${nmerge===1?'parece repetido e será mesclado':'parecem repetidos e serão mesclados'}`:''}</span>
+      <span class="sub" id="i-sum">${n} selecionados · ${nm} conciliam com o que já estava lançado (sem duplicar)${nmerge?` · ${nmerge} ${nmerge===1?'parece repetido e será mesclado':'parecem repetidos e serão mesclados'}`:''}</span>
       <div class="flex gap-2"><button type="button" class="btn" id="i-back">Trocar arquivo</button><button type="button" class="btn btn-primary" id="i-go" ${n?'':'disabled'}>Importar ${n} ${n===1?'lançamento':'lançamentos'}</button></div>
     </div></div>`;
   $('#i-back').onclick=()=>{ IM.rows=[]; IM.raw=null; IM.meta=null; $('#i-file').value=''; $('#i-preview').innerHTML=''; setIStep(1); };
-  box.querySelectorAll('[data-ri]').forEach(c=>c.onchange=()=>{ IM.rows[+c.dataset.ri].include=c.checked; renderPreview(); });
-  box.querySelectorAll('[data-rc]').forEach(s=>s.onchange=()=>{ IM.rows[+s.dataset.rc].cat=s.value; renderPreview(); });
+  box.querySelectorAll('[data-ri]').forEach(c=>c.onchange=()=>{ IM.rows[+c.dataset.ri].include=c.checked; c.closest('tr').classList.toggle('off', !c.checked); updateImpactUI(true); });
+  box.querySelectorAll('[data-rc]').forEach(s=>s.onchange=()=>{ IM.rows[+s.dataset.rc].cat=s.value; updateImpactUI(true); });
   box.querySelectorAll('[data-rw]').forEach(s=>s.onchange=()=>{ IM.rows[+s.dataset.rw].who=s.value; });
   box.querySelectorAll('[data-rx]').forEach(s=>s.onchange=()=>{ const r=IM.rows[+s.dataset.rx]; r.xdec=s.value; if (r.xpartner!=null){ const q=IM.rows[r.xpartner]; q.xdec=s.value; q.include = s.value==='keep'; } renderPreview(); });
   box.querySelectorAll('[data-rd]').forEach(s=>s.onchange=()=>{ const r=IM.rows[+s.dataset.rd]; r.decision=s.value; r.include = s.value==='import'; renderPreview(); });
   $('#i-go').onclick=doImport;
+  updateImpactUI(false);
 }
 function doImport(){
   let created=0, matched=0, fats=0, xfers=0;
