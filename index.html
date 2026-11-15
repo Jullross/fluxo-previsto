@@ -2917,7 +2917,7 @@ function setSeg(id,v){ $$('#'+id+' button').forEach(b=>b.classList.toggle('on',b
 $$('#f-kind,#f-type,#f-scope,#f-who,#f-status').forEach(seg=>seg.addEventListener('click',ev=>{
   const b=ev.target.closest('button'); if(!b || b.disabled) return;
   if (seg.id==='f-kind') F.kind=b.dataset.v;
-  if (seg.id==='f-type' && !F.id){ F.type=b.dataset.v; if (!F.catTouched) $('#f-cat').value=inferCat({type:F.type}); }
+  if (seg.id==='f-type'){ F.type=b.dataset.v; if (!F.id && !F.catTouched) $('#f-cat').value=inferCat({type:F.type}); }
   if (seg.id==='f-scope') F.scope=b.dataset.v;
   if (seg.id==='f-who') F.who=b.dataset.v;
   if (seg.id==='f-status') F.paid=b.dataset.v==='paid';
@@ -2953,7 +2953,8 @@ function openEntry(id, ctx, kind, day){
 function syncForm(){
   setSeg('f-kind',F.kind); setSeg('f-type',F.type); setSeg('f-scope',F.scope); setSeg('f-who',F.who);
   const e = F.id ? S.entries.find(x=>x.id===F.id) : null;
-  $$('#f-type button').forEach(b=>b.disabled=!!F.id && b.dataset.v!==F.type);
+  $$('#f-type button').forEach(b=>b.disabled=false);
+  const typeChanged = !!(e && e.type!==F.type);
   const t=F.type, inn=F.kind==='in', acc=accById($('#f-acc').value);
   $('#wrap-n').hidden = t!=='installment'; $('#wrap-end').hidden = t!=='recurring';
   $('#f-start').min = '';
@@ -3000,7 +3001,7 @@ function syncForm(){
     single: inn?'Entra só no mês escolhido (13º, restituição, bônus, venda).':'Sai só no mês escolhido (Pix, mercado, compra à vista).'
   }[t];
   if (xf) $('#f-hint').textContent = 'Dinheiro passando de uma conta sua para outra (Pix para a sua caixinha, Itaú → Nubank). Não conta como entrada, nem saída, nem no teto de gastos.';
-  const showScope = e && t==='recurring' && F.ctx>e.start;
+  const showScope = e && !typeChanged && t==='recurring' && F.ctx>e.start;
   $('#wrap-scope').hidden = !showScope;
   $('#f-start').disabled = !!showScope && F.scope==='forward';
   if (showScope) $('#f-scope-note').textContent = F.scope==='forward' ? `Meses antes de ${mLabel(F.ctx)} mantêm o valor antigo.` : 'Substitui o valor em todo o histórico desse lançamento.';
@@ -3008,6 +3009,11 @@ function syncForm(){
   $('#f-preview').textContent = t==='installment' && amt>0 && n>=2 ? `${n} × ${fmt(Math.floor(amt*100/n)/100)} de ${mLabel(st)} a ${mLabel(addM(st,n-1))}`
     : t==='recurring' && st ? (st<CUR ? `Começa em ${mLabel(st)}: aparece desse mês em diante, nunca antes.${st<S.settings.baseMonth?` Sua conta passa a começar em ${mLabel(st)}, com o mesmo saldo inicial.`:''}` : `Aparece de ${mLabel(st)} em diante.`)
     : t==='single' && st && st<S.settings.baseMonth ? `Este lançamento é anterior ao início da conta: ela passa a começar em ${mLabel(st)}.` : '';
+  if (typeChanged){
+    const st0=$('#f-start').value||F.ctx;
+    $('#f-preview').innerHTML = t==='recurring' ? `<b>Vira recorrente</b> de ${mLabel(st0)} em diante${acc&&acc.kind==='card'?`, sempre na fatura do ${esc(acc.name)}`:''}. Se o dia variar um pouco, não tem problema: quando o lançamento do mês chegar do banco, ele é conciliado com este.${e.hist?' Deixa de ser só histórico e passa a contar no saldo.':''}`
+      : t==='installment' ? `<b>Vira parcelado</b>: informe o valor total e o número de parcelas.` : `<b>Vira lançamento único</b> em ${mLabel(st0)}.`;
+  }
   if (xf){ const fa=accById($('#f-from').value), ta=accById($('#f-to').value); $('#f-preview').innerHTML = `<span style="color:var(--cal-bal);font-weight:600">⇄ Impacto zero na sobra.</span> ${fa&&ta&&fa!==ta?`${esc(fa.name)} −${fmt(amt>0?amt:0)} · ${esc(ta.name)} +${fmt(amt>0?amt:0)}`:''}`; }
   let d='';
   if (e){
@@ -3041,7 +3047,21 @@ $('#f-entry').addEventListener('submit',ev=>{
     else if (F.type==='installment'){ e.n=n; e.total=amt; } else e.amount=amt;
     S.entries.push(e); toast(whoActive?'Gasto salvo com reembolso previsto':'Lançamento salvo');
   } else {
-    e=S.entries.find(x=>x.id===F.id); Object.assign(e,base);
+    e=S.entries.find(x=>x.id===F.id);
+    const oldType=e.type;
+    if (oldType!==F.type){
+      // troca de tipo (ex.: único → recorrente): refaz a estrutura a partir do mês do formulário
+      for (const k of ['amount','total','n','changes','end','k0','ofN','hist']) delete e[k];
+      Object.assign(e, base, {start});
+      if (F.type==='recurring'){ e.changes=[{from:start, amount:amt}]; e.end=end; }
+      else if (F.type==='installment'){ e.n=n; e.total=amt; }
+      else e.amount=amt;
+      syncReimb(e);
+      { const sk=e.id+'|'+(F.ctx||e.start), card=e.kind==='out' && isCardAcc(e.accountId); if (!card){ if (F.paid) S.status[sk]=true; else delete S.status[sk]; } }
+      commit(); close(); toast(F.type==='recurring'?'Agora é recorrente: aparece todo mês':F.type==='installment'?'Agora é parcelado':'Agora é um lançamento único');
+      return;
+    }
+    Object.assign(e,base);
     if (e.kind!=='out'){ delete e.method; delete e.cat; delete e.whoUsed; delete e.whoName; }
     if (e.kind!=='transfer'){ delete e.fromId; delete e.toId; }
     if (F.type==='recurring'){
@@ -3281,6 +3301,11 @@ function parseParc(desc, iso){
   return {k, n, base: base || d.trim()};
 }
 const parcNorm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'').slice(0,10);
+// Nome parecido: compara as palavras que identificam o estabelecimento, ignorando as genéricas do banco
+const NAME_STOP=new Set(['transferencia','enviada','recebida','enviado','recebido','pelo','pela','pix','compra','debito','credito','via','nupay','ltda','pagamento','boleto','efetuado','sub','cartao','online','com','br','sa','me','eireli','dl']);
+function nameTokens(s){ s=String(s||''); const tail=s.includes('|')?s.split('|').slice(1).join(' '):s;
+  return new Set(tail.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[^a-z0-9]+/).filter(w=>w.length>=3 && !NAME_STOP.has(w) && !/^\d+$/.test(w))); }
+function nameLike(a,b){ const A=nameTokens(a), B=nameTokens(b); for (const w of A) if (B.has(w)) return true; return false; }
 // Linhas de saldo (saldo anterior, disponível, do dia, total...) não são transações: saem da lista e o saldo mais recente vira sugestão
 const SALDO_RE=/^\s*(saldo|sdo)\b|\bsaldo\s+(anterior|disponivel|do dia|final|atual|total|em conta|bloqueado|inicial|liquido|parcial)\b/;
 function splitSaldo(raw){
@@ -3316,6 +3341,11 @@ function buildRows(raw){
       if (used.has(k) || e.type!=='installment' || e.accountId!==a.id || Math.abs(o.amount-amount)>0.05) continue;
       const num = diffM(e.start,m) + (e.k0||1), tot = e.ofN || e.n;
       if (num===parc.k && tot===parc.n){ match={key:k, name:e.name+' '+num+'/'+tot, day:o.day, parc:true}; used.add(k); break; } }
+    // recorrente com dia ou valor que variam (Pix sem dia fixo, assinatura em dólar): mesmo nome e mesma conta, até 15 dias e 15% de diferença
+    if (!match) for (const o of occurrences(m, S.entries)){ const e=o.e, k=e.id+'|'+m;
+      if (used.has(k) || o.done || e.type!=='recurring' || e.kind!==kind || (e.accountId && e.accountId!==a.id)) continue;
+      if (Math.abs(o.day-day)>15 || Math.abs(o.amount-amount) > Math.max(1, o.amount*0.15) || !nameLike(e.name, r.desc)) continue;
+      match={key:k, name:e.name, day:o.day, rec:e.id, recAmount:o.amount}; used.add(k); break; }
     if (!match) for (const o of occurrences(m, S.entries)){ const k=o.e.id+'|'+m;
       if (!used.has(k) && !o.done && o.e.kind===kind && Math.abs(o.amount-amount)<0.01 && Math.abs(o.day-day)<=5){ match={key:k, name:o.e.name, day:o.day}; used.add(k); break; } }
     const dup = keys.has(importKey);
@@ -3450,7 +3480,10 @@ function doImport(){
   for (const r of IM.rows.filter(x=>x.similar && x.decision==='merge')){ if (r.done) S.status[r.similar.key]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; } const touched=new Set(IM.rows.map(r=>r.accId));
   for (const r of IM.rows.filter(x=>x.include)){
     const a=accById(r.accId||IM.accId);
-    if (r.match){ if (r.done) S.status[r.match.key]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; continue; }
+    if (r.match){ if (r.done) S.status[r.match.key]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++;
+      if (r.match.rec && Math.abs(r.match.recAmount-r.amount)>=0.01){ const re=S.entries.find(x=>x.id===r.match.rec); const mm=r.match.key.split('|')[1];
+        if (re && re.changes){ re.changes=re.changes.filter(c=>c.from<mm); re.changes.push({from:mm, amount:r.amount}); re.changes.sort((x,y)=>x.from<y.from?-1:1); } }
+      continue; }
     if (r.fatPay){ const c=accById(r.fatPay.cardId), k=c.id+'|'+r.fatPay.m, prev=(S.faturas||{})[k];
       const paid = prev && prev.src!=='manual' && prev.keys && prev.keys.includes(r.importKey) ? prev.paid : r2((prev&&prev.src!=='manual'?prev.paid:0)+r.amount);
       // pagou o total ou mais: fatura paga. Pagou menos: o resto vai para o mês seguinte.

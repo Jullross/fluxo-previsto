@@ -59,6 +59,8 @@ Abas de Lançamentos, Calendário, Dívidas e Desafio no topo. Abaixo, o painel 
 - **Tipos:** Entrada, Saída ou Transferência; Único, Recorrente ou Parcelado.
 - **Pendente ou pago:** o círculo na lista marca pago. O que está pendente continua descontando da sobra, mas aparece separado em "Ainda vai sair".
 - **Edição rápida:** toque no nome ou no valor para mudar na hora.
+- **Transformar em recorrente:** abra um lançamento que já existe (um Pix, uma assinatura no cartão) e troque Único por Recorrente. Ele passa a aparecer todo mês a partir daquele mês. No cartão, cai sempre no vencimento da fatura.
+- **Dia ou valor que variam:** quando o lançamento do mês chega do banco com o mesmo nome, o app reconhece o recorrente mesmo com até 15 dias e 15% de diferença, marca como pago e passa a prever o valor novo.
 - **Transferência entre contas suas:** escolha Transferência, a conta de onde saiu e a de onde entrou. Não conta como entrada, saída nem no teto. Se aparecer "Parece uma transferência entre suas contas", toque em Juntar.
 - **Gasto de outra pessoa no seu cartão:** em "Quem usou?", escolha a pessoa. O app cria o reembolso previsto e os dois se anulam no saldo.
 

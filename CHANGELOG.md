@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v27 | 15/11/2026 | Editar lançamento permite trocar o tipo (único → recorrente ou parcelado e vice-versa); recorrente com dia ou valor que variam é conciliado pelo nome (até 15 dias e 15%) e a previsão segue o valor novo |
 | v26 | 15/11/2026 | Fatura em PDF ou print: todos os lançamentos entram no vencimento do documento (não na data da compra); parcelas lidas da IA ("7/7", "5/12") viram parceladas; fechamento e vencimento do cartão atualizados pelo documento |
 | v25 | 15/11/2026 | Conferir saldo com os bancos: saldo de cada conta (digitado, do Open Finance ou do extrato importado), soma, diferença para o app e ajuste com um toque; aviso no sino quando não bate |
 | v24 | 15/11/2026 | Importações de meses passados viram só registro (não mudam saldo de hoje, de dias ou de meses passados, nem a data de início da conta); revisão do cartão com Fechamento e Vencimento num card só e o total em destaque com lançamentos e parcelados |
