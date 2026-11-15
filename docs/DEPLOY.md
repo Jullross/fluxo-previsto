@@ -4,7 +4,7 @@ O app fica no GitHub Pages: cada envio para a branch `main` publica sozinho, de 
 
 ## Publicar uma versão nova
 
-1. Troque `const CACHE = 'fluxo-previsto-v25'` no `sw.js` pelo número seguinte.
+1. Troque `const CACHE = 'fluxo-previsto-v26'` no `sw.js` pelo número seguinte.
 2. Envie para a branch `main` (commit e push). Em 1 ou 2 minutos o GitHub Pages publica em https://jullross.github.io/fluxo-previsto/.
 3. Na próxima abertura, o app instalado baixa a versão nova.
 

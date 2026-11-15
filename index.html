@@ -3271,13 +3271,13 @@ function cardFat(a, iso, billDue){
 // Parcela na descrição: "PARC 03/10", "Parcela 1 de 5", "MERCA01/02", "1/5" no fim
 function parseParc(desc, iso){
   const d=String(desc||'');
-  const m = d.match(/parc(?:ela)?\.?\s*(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/i) || d.match(/(?:^|[^\d\/])(\d{1,2})\s*(?:\/|\bde\b)\s*(\d{1,2})\s*$/i);
+  const m = d.match(/parc(?:ela)?\.?\s*(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/i) || d.match(/(?:^|[^\d\/])(\d{1,2})\s*(?:\/|\bde\b)\s*(\d{1,2})\s*\)?\s*$/i);
   if (!m) return null;
   const k=+m[1], n=+m[2]; if (!(n>=2 && n<=72 && k>=1 && k<=n)) return null;
   // "05/11" igual ao dia e mês da compra é data, não parcela
   if (iso && +String(iso).slice(8,10)===k && +String(iso).slice(5,7)===n) return null;
   const start = m.index + m[0].search(/parc|\d/i), end = m.index + m[0].length;
-  const base = (d.slice(0,start)+' '+d.slice(end)).replace(/\s{2,}/g,' ').replace(/^[\s*\-–·|]+|[\s*\-–·|]+$/g,'').trim();
+  const base = (d.slice(0,start)+' '+d.slice(end)).replace(/\s{2,}/g,' ').replace(/\(\s*\)/g,' ').replace(/\s{2,}/g,' ').replace(/^[\s*\-–·|(]+|[\s*\-–·|(]+$/g,'').trim();
   return {k, n, base: base || d.trim()};
 }
 const parcNorm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'').slice(0,10);
@@ -3298,7 +3298,9 @@ function buildRows(raw){
     if (signFor[a.id]===undefined){ const mine=raw.filter(x=>(x.accId||IM.accId)===a.id), negs=mine.filter(x=>x.amount<0).length; signFor[a.id] = card ? (negs>mine.length/2?-1:1) : -1; }
     const kind = r.kind || (Math.sign(r.amount)===signFor[a.id] ? 'out' : 'in'), amount=r2(Math.abs(r.amount));
     let m=r.date.slice(0,7), day=+r.date.slice(8,10);
-    if (card && kind==='out'){ const due=cardFat(a, r.date, r.billDue); if (due){ m=due.m; day=due.day; } }
+    // numa fatura (PDF/print com vencimento lido), tudo o que está nela vence junto: o vencimento do documento manda, não a data da compra
+    const docDue = card && IM.meta && /^\d{4}-\d{2}-\d{2}/.test(IM.meta.vencimento||'') ? String(IM.meta.vencimento).slice(0,10) : null;
+    if (card && kind==='out'){ const due=cardFat(a, r.date, r.billDue || docDue); if (due){ m=due.m; day=due.day; } }
     // compra parcelada: pelos dados do banco ou pela descrição
     let parc = null;
     if (card && kind==='out'){
@@ -3543,12 +3545,13 @@ async function readPdfAI(files){
     // fatura de cartão: aproveita fechamento e vencimento lidos do PDF quando o cartão ainda não tem
     if (a && a.kind==='card'){
       const cd=d.fechamento?+String(d.fechamento).slice(8,10):null, dd=d.vencimento?+String(d.vencimento).slice(8,10):null;
-      if (!a.closeDay && cd) a.closeDay=cd; if (!a.dueDay && dd) a.dueDay=dd;
+      if (cd) a.closeDay=cd; if (dd) a.dueDay=dd; // o documento do banco manda
     }
     const raw=(d.transacoes||[]).filter(t=>/^\d{4}-\d{2}-\d{2}/.test(String(t.data||''))).map(t=>{
       const v=Math.abs(+t.valor||0), out=t.tipo!=='entrada';
-      const desc=String(t.descricao||'').trim()+(t.parcela?` (${t.parcela})`:'');
-      return {date:String(t.data).slice(0,10), desc, amount: out?-v:v, kind: out?'out':'in', cat: out ? (t.categoria || (t.parcela?'futuro':null)) : null, payment: !!t.pagamento_fatura};
+      const desc=String(t.descricao||'').trim(), pm=String(t.parcela||'').match(/(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/);
+      return {date:String(t.data).slice(0,10), desc, amount: out?-v:v, kind: out?'out':'in', cat: out ? (t.categoria || (t.parcela?'futuro':null)) : null, payment: !!t.pagamento_fatura,
+        parcK: pm?+pm[1]:null, parcN: pm?+pm[2]:null};
     }).filter(r=>r.amount);
     if (!raw.length){ setIStep(1); box.innerHTML=`<div class="hint c-out">A IA não encontrou lançamentos em ${label}. Confira se ${what} mostra uma fatura ou um extrato, com datas e valores legíveis.</div>`; return; }
     IM.file = `${files.length>1?files.length+' prints':f.name} · lido pela IA${d.banco?' ('+d.banco+')':''}`; IM.raw=raw;

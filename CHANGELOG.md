@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v26 | 15/11/2026 | Fatura em PDF ou print: todos os lançamentos entram no vencimento do documento (não na data da compra); parcelas lidas da IA ("7/7", "5/12") viram parceladas; fechamento e vencimento do cartão atualizados pelo documento |
 | v25 | 15/11/2026 | Conferir saldo com os bancos: saldo de cada conta (digitado, do Open Finance ou do extrato importado), soma, diferença para o app e ajuste com um toque; aviso no sino quando não bate |
 | v24 | 15/11/2026 | Importações de meses passados viram só registro (não mudam saldo de hoje, de dias ou de meses passados, nem a data de início da conta); revisão do cartão com Fechamento e Vencimento num card só e o total em destaque com lançamentos e parcelados |
 | v23 | 15/11/2026 | Revisão: sai o bloco de impacto e "Saídas no arquivo" (ou "Total da fatura") vira o destaque; linhas de saldo nunca entram como gasto e o saldo do arquivo pode virar o saldo de hoje; âncora do saldo: lançamentos de meses anteriores não mudam mais o "Quanto eu tenho hoje"; campo "Quanto você tem hoje" em Ajustes |
