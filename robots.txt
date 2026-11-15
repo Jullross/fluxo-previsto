@@ -4,4 +4,4 @@ Allow: /privacidade.html
 Allow: /termos.html
 Disallow: /sw.js
 
-Sitemap: https://fluxo-previsto.netlify.app/sitemap.xml
+Sitemap: https://jullross.github.io/fluxo-previsto/sitemap.xml

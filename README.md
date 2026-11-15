@@ -2,7 +2,7 @@
 
 **Saiba hoje quanto vai sobrar no fim do mês.** App web instalável (PWA) de previsibilidade financeira pessoal: projeta o saldo de cada dia e de cada mês, a partir de 2025 e sem data para acabar, com login, sincronização na nuvem e modo demonstração.
 
-**App publicado:** [fluxo-previsto.netlify.app](https://fluxo-previsto.netlify.app) · entre em "Testar sem conta" para ver com dados de exemplo.
+**App publicado:** [jullross.github.io/fluxo-previsto](https://jullross.github.io/fluxo-previsto/) · entre em "Testar sem conta" para ver com dados de exemplo.
 
 <p>
   <img src="docs/img/celular-inicio.png" alt="Tela Início no celular" width="240">
@@ -34,7 +34,7 @@
 
 ## Tecnologias
 
-HTML, CSS e JavaScript puro num único `index.html` (sem build) · Tailwind 3.4 · Supabase (Auth, Postgres com RLS, Realtime, Edge Functions em Deno) · jsPDF · Pluggy (Open Finance) · Google Gemini (leitura de PDF e prints) · Netlify · PWA com service worker.
+HTML, CSS e JavaScript puro num único `index.html` (sem build) · Tailwind 3.4 · Supabase (Auth, Postgres com RLS, Realtime, Edge Functions em Deno) · jsPDF · Pluggy (Open Finance) · Google Gemini (leitura de PDF e prints) · GitHub Pages · PWA com service worker.
 
 ## Documentação
 
@@ -68,7 +68,7 @@ supabase-schema.sql     tabela, RLS, gatilho e tempo real
 supabase/functions/     open-finance e pdf-import (Deno)
 privacidade.html        Política de Privacidade (LGPD)
 termos.html             Termos de Uso
-_headers, _redirects    segurança e rotas no Netlify
+404.html                volta para o app em qualquer endereço errado
 docs/                   documentação e imagens
 ```
 

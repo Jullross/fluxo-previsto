@@ -5,7 +5,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // ID da dona do app: fica no segredo OWNER_ID do Supabase, nunca no código.
 const OWNER_ID = (Deno.env.get("OWNER_ID") ?? "").trim();
-const ALLOWED = ["https://fluxo-previsto.netlify.app", "https://jullross.github.io", "http://localhost:8000", "http://127.0.0.1:8000"];
+const ALLOWED = ["https://jullross.github.io", "http://localhost:8000", "http://127.0.0.1:8000"];
 // Primeiro o modelo mais leve; se a leitura falhar ou vier vazia, tenta o mais capaz.
 const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
 const MAX_B64 = 14_000_000; // cerca de 10 MB somando todos os arquivos

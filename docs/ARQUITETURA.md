@@ -15,7 +15,7 @@ flowchart LR
     RT["Realtime<br/>outros aparelhos"]
     EF["Edge Functions<br/>guardam os segredos"]
   end
-  NET["Netlify<br/>entrega os arquivos (HTTPS)"] -->|publica| NAV
+  NET["GitHub Pages<br/>entrega os arquivos (HTTPS)"] -->|publica| NAV
   APP -->|login| AUTH
   APP -->|lê e grava| PG
   RT -->|avisa mudança| APP
@@ -25,7 +25,7 @@ flowchart LR
   EF --> GEM["Gemini · lê PDF e prints"]
 ```
 
-O Netlify entrega os arquivos; o navegador faz login, lê e grava a linha da pessoa e recebe avisos de mudança de outros aparelhos. Pluggy e Gemini só são chamados de dentro das Edge Functions, e só para a conta da dona.
+O GitHub Pages entrega os arquivos; o navegador faz login, lê e grava a linha da pessoa e recebe avisos de mudança de outros aparelhos. Pluggy e Gemini só são chamados de dentro das Edge Functions, e só para a conta da dona.
 
 ## Decisões
 

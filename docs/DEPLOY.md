@@ -1,15 +1,16 @@
 # Deploy e operação
 
-Publicar uma versão nova é aumentar o número do cache no `sw.js` e enviar a pasta para o Netlify; o resto é configurado uma vez.
+O app fica no GitHub Pages: cada envio para a branch `main` publica sozinho, de graça. O resto é configurado uma vez.
 
 ## Publicar uma versão nova
 
-1. Troque `const CACHE = 'fluxo-previsto-v19'` no `sw.js` pelo número seguinte.
-2. No Netlify, abra **Deploys** e arraste a pasta do projeto (ou ligue o site a este repositório).
+1. Troque `const CACHE = 'fluxo-previsto-v20'` no `sw.js` pelo número seguinte.
+2. Envie para a branch `main` (commit e push). Em 1 ou 2 minutos o GitHub Pages publica em https://jullross.github.io/fluxo-previsto/.
 3. Na próxima abertura, o app instalado baixa a versão nova.
 
 ## Configuração feita uma vez
 
+0. **GitHub Pages:** Settings → Pages → Deploy from a branch → `main` / `(root)`.
 1. **Supabase:** crie um projeto e rode [`supabase-schema.sql`](../supabase-schema.sql) no SQL Editor.
 2. **Chaves públicas:** cole a Project URL e a chave **anon** no bloco `CONFIG` do `index.html`.
 3. **URLs:** em Authentication → URL Configuration, coloque o endereço publicado em Site URL e Redirect URLs.

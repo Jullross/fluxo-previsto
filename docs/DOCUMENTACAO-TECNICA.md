@@ -14,7 +14,7 @@ O app inteiro roda no navegador, num único `index.html` em JavaScript puro, sem
 | Funções no servidor | Supabase Edge Functions (Deno, TypeScript) | — |
 | Open Finance | Pluggy API (Meu Pluggy) | transações v2 |
 | Leitura de PDF e prints | Google Gemini | modelos flash |
-| Hospedagem | Netlify | — |
+| Hospedagem | GitHub Pages (publica a branch `main`) | — |
 | App instalável | Manifest + service worker | cache v17 |
 
 ## Módulos dentro do `index.html`

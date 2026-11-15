@@ -12,8 +12,8 @@ Cada pessoa só consegue ler e alterar a própria linha do banco, e nenhum segre
 | Segredos | Pluggy, conexões, Gemini e `OWNER_ID` ficam em Edge Functions → Secrets |
 | Funções restritas | `open-finance` e `pdf-import` exigem login válido e respondem só ao `OWNER_ID`; os demais recebem 403 |
 | CORS das funções | Só o domínio publicado e `localhost:8000` |
-| Transporte | HTTPS (Netlify e Supabase) e HSTS |
-| Cabeçalhos | `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` sem câmera, microfone, localização e pagamento |
+| Transporte | HTTPS obrigatório (GitHub Pages e Supabase) |
+| Cabeçalhos | O GitHub Pages não aceita cabeçalhos próprios; a política de referência vai numa meta tag do `index.html` |
 | No aparelho | Cópia em `localStorage` para funcionar offline; Sair limpa a sessão |
 | Na tela | Modo privacidade embaralha todos os valores em R$ |
 
