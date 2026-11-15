@@ -1522,7 +1522,26 @@ function migrate(d){
   for (const a of d.accounts) a.reviewed = a.reviewed||{};
   d.challenge = d.challenge || {mode:'ritmo', months:{}}; d.challenge.months = d.challenge.months||{};
   for (const e of d.entries) if (e.kind==='out' && !e.cat) e.cat=inferCat(e);
+  fixCardImports(d);
   return d;
+}
+// Corrige compras de cartão que vieram do Open Finance antes da v21: estavam na data da compra, como pagas e sem parcelas.
+// Passam para o mês da fatura, ficam pendentes se a fatura ainda não venceu e viram parceladas quando a descrição diz "01/02".
+function fixCardImports(d){
+  const accs={}; for (const a of d.accounts||[]) accs[a.id]=a;
+  const st=d.status||(d.status={}); const today=TODAY_ISO;
+  for (const e of d.entries||[]){
+    const a=accs[e.accountId];
+    if (e.ofFix || e.kind!=='out' || !a || a.kind!=='card' || !String(e.importKey||'').startsWith('pluggy:') || e.type!=='single') continue;
+    e.ofFix=1;
+    const oldKey=e.id+'|'+e.start, wasDone=!!st[oldKey], buyIso=e.start+'-'+pad(e.day);
+    const due=cardFat(a, buyIso, null);
+    if (due && (due.m!==e.start || due.day!==e.day)){ delete st[oldKey]; e.start=due.m; e.day=due.day; }
+    const p=parseParc(e.name, buyIso);
+    if (p){ const rest=p.n-p.k+1; e.type='installment'; e.n=rest; e.total=r2(e.amount*rest); e.k0=p.k; e.ofN=p.n; e.name=p.base||e.name; delete e.amount; }
+    const k=e.id+'|'+e.start;
+    if ((e.start+'-'+pad(e.day)) > today) delete st[k]; else if (wasDone) st[k]=true;
+  }
 }
 function emptyState(){ return {version:3, example:false, settings:{baseMonth:CUR, initialBalance:0, targets:{...DEFAULT_TARGETS}, targetMode:'manual', accent:'esmeralda'}, accounts:[], entries:[], debts:[], status:{}, faturas:{}, challenge:{mode:'ritmo', months:{}}}; }
 S = emptyState();
@@ -1736,7 +1755,7 @@ function occurrences(m, entries, withXfer){
     } else if (e.type==='installment'){
       const i = diffM(e.start,m); if (i<0 || i>=e.n) continue;
       const per = Math.floor(e.total*100/e.n)/100;
-      amount = i===e.n-1 ? r2(e.total-per*(e.n-1)) : per; tag='Parcela '+(i+1)+'/'+e.n; cls='parc';
+      amount = i===e.n-1 ? r2(e.total-per*(e.n-1)) : per; tag='Parcela '+(i+(e.k0||1))+'/'+(e.ofN||e.n); cls='parc';
     } else {
       if (e.start!==m) continue; amount=e.amount; tag='Variável/Único'; cls='';
     }
@@ -3143,6 +3162,27 @@ function cardDue(iso, a){
   const dueM = a.dueDay > a.closeDay ? closeM : addM(closeM,1);
   return {m:dueM, day:Math.min(a.dueDay, daysIn(dueM))};
 }
+// Fatura de uma compra no cartão: pelo vencimento da fatura vindo do banco (Open Finance), senão pelo fechamento cadastrado,
+// senão estimando o fechamento 7 dias antes do vencimento (como a maioria dos cartões).
+function cardFat(a, iso, billDue){
+  if (billDue && /^\d{4}-\d{2}-\d{2}/.test(billDue)){ const m=String(billDue).slice(0,7); return {m, day:+String(billDue).slice(8,10)}; }
+  if (!a || !a.dueDay) return null;
+  const close = a.closeDay || (((a.dueDay-7-1+31)%31)+1);
+  return cardDue(iso, {closeDay:close, dueDay:a.dueDay});
+}
+// Parcela na descrição: "PARC 03/10", "Parcela 1 de 5", "MERCA01/02", "1/5" no fim
+function parseParc(desc, iso){
+  const d=String(desc||'');
+  const m = d.match(/parc(?:ela)?\.?\s*(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/i) || d.match(/(?:^|[^\d\/])(\d{1,2})\s*(?:\/|\bde\b)\s*(\d{1,2})\s*$/i);
+  if (!m) return null;
+  const k=+m[1], n=+m[2]; if (!(n>=2 && n<=72 && k>=1 && k<=n)) return null;
+  // "05/11" igual ao dia e mês da compra é data, não parcela
+  if (iso && +String(iso).slice(8,10)===k && +String(iso).slice(5,7)===n) return null;
+  const start = m.index + m[0].search(/parc|\d/i), end = m.index + m[0].length;
+  const base = (d.slice(0,start)+' '+d.slice(end)).replace(/\s{2,}/g,' ').replace(/^[\s*\-–·|]+|[\s*\-–·|]+$/g,'').trim();
+  return {k, n, base: base || d.trim()};
+}
+const parcNorm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'').slice(0,10);
 function buildRows(raw){
   const signFor = {};
   const used=new Set(), keys=new Set([...S.entries.map(e=>e.importKey).filter(Boolean), ...Object.keys(S.imported||{})]);
@@ -3151,11 +3191,23 @@ function buildRows(raw){
     if (signFor[a.id]===undefined){ const mine=raw.filter(x=>(x.accId||IM.accId)===a.id), negs=mine.filter(x=>x.amount<0).length; signFor[a.id] = card ? (negs>mine.length/2?-1:1) : -1; }
     const kind = r.kind || (Math.sign(r.amount)===signFor[a.id] ? 'out' : 'in'), amount=r2(Math.abs(r.amount));
     let m=r.date.slice(0,7), day=+r.date.slice(8,10);
-    if (card && kind==='out' && a.closeDay && a.dueDay){ const due=cardDue(r.date,a); m=due.m; day=due.day; }
+    if (card && kind==='out'){ const due=cardFat(a, r.date, r.billDue); if (due){ m=due.m; day=due.day; } }
+    // compra parcelada: pelos dados do banco ou pela descrição
+    let parc = null;
+    if (card && kind==='out'){
+      if (r.parcN>=2 && r.parcK>=1 && r.parcK<=r.parcN){ const pp=parseParc(r.desc, r.date); parc={k:+r.parcK, n:+r.parcN, base:pp?pp.base:String(r.desc||'').trim()}; }
+      else parc=parseParc(r.desc, r.date);
+    }
     const importKey=r.key || (a.id+'|'+r.date+'|'+amount.toFixed(2)+'|'+r.desc);
-    const done = (m+'-'+pad(day)) <= TODAY_ISO;
+    // no cartão nada entra como pago: fica pendente na fatura até a fatura ser paga (baixa manual ou pagamento identificado na conta)
+    const done = card ? false : (m+'-'+pad(day)) <= TODAY_ISO;
     let match=null;
-    for (const o of occurrences(m, S.entries)){ const k=o.e.id+'|'+m;
+    // parcela que o app já projetou (sincronização anterior): concilia em vez de duplicar
+    if (parc) for (const o of occurrences(m, S.entries)){ const e=o.e, k=e.id+'|'+m;
+      if (used.has(k) || e.type!=='installment' || e.accountId!==a.id || Math.abs(o.amount-amount)>0.05) continue;
+      const num = diffM(e.start,m) + (e.k0||1), tot = e.ofN || e.n;
+      if (num===parc.k && tot===parc.n){ match={key:k, name:e.name+' '+num+'/'+tot, day:o.day, parc:true}; used.add(k); break; } }
+    if (!match) for (const o of occurrences(m, S.entries)){ const k=o.e.id+'|'+m;
       if (!used.has(k) && !o.done && o.e.kind===kind && Math.abs(o.amount-amount)<0.01 && Math.abs(o.day-day)<=5){ match={key:k, name:o.e.name, day:o.day}; used.add(k); break; } }
     const dup = keys.has(importKey);
     const payment = !!r.payment || (card && kind==='in' && /pagamento|pgto|fatura/i.test(r.desc));
@@ -3189,8 +3241,13 @@ function buildRows(raw){
         if (used.has(k) || o.e.kind!==kind || o.e.virtual || o.e.vault) continue;
         if (Math.abs(o.amount-amount) <= Math.max(0.5, amount*0.01) && Math.abs(o.day-day)<=3){ similar={key:k, name:o.e.name, day:o.day, amount:o.amount, done:o.done}; used.add(k); break; } }
     }
-    return {include:!dup && (!payment || !!fatPay) && !similar, fatPay, xfer, xdec: xfer?'transfer':null, similar, decision: similar?'merge':null, accId:a.id, date:r.date, desc:r.desc||'(sem descrição)', amount, kind, cat:(r.cat && CATS[r.cat]) ? r.cat : guessCat(r.desc||''), who:'me', m, day, done, match, dup, payment, importKey, pending:!!r.pending};
+    return {include:!dup && (!payment || !!fatPay) && !similar, parc, card, fatPay, xfer, xdec: xfer?'transfer':null, similar, decision: similar?'merge':null, accId:a.id, date:r.date, desc:r.desc||'(sem descrição)', amount, kind, cat:(r.cat && CATS[r.cat]) ? r.cat : (parc ? 'futuro' : guessCat(r.desc||'')), who:'me', m, day, done, match, dup, payment, importKey, pending:!!r.pending};
   }).sort((x,y)=>x.date<y.date?-1:1);
+  // várias parcelas da mesma compra no mesmo arquivo: só a primeira cria a compra parcelada; as outras já ficam projetadas por ela
+  { const groups={};
+    IM.rows.forEach((x,i)=>{ if (!x.parc || x.match || x.dup) return; const g=x.accId+'|'+parcNorm(x.parc.base)+'|'+x.parc.n+'|'+Math.round(x.amount); (groups[g]=groups[g]||[]).push(i); });
+    for (const ids of Object.values(groups)){ ids.sort((i,j)=>IM.rows[i].parc.k-IM.rows[j].parc.k); const first=IM.rows[ids[0]];
+      for (const j of ids.slice(1)){ const y=IM.rows[j]; if (y.parc.k===first.parc.k) continue; y.parcCovered=ids[0]; y.include=false; } } }
   // pares dentro do próprio arquivo (Open Finance com várias contas): saída numa conta e entrada noutra, mesmo valor e data
   for (let i=0;i<IM.rows.length;i++){ const x=IM.rows[i]; if (x.match||x.fatPay||x.xfer||x.dup||x.xpartner!=null||isCardAcc(x.accId)) continue;
     for (let j=i+1;j<IM.rows.length;j++){ const y=IM.rows[j]; if (y.match||y.fatPay||y.xfer||y.dup||y.xpartner!=null||isCardAcc(y.accId)) continue;
@@ -3216,7 +3273,7 @@ function renderPreview(){
       ${kp('Gastos selecionados', fmt(selSum), 'c-acc')}
     </div>
     <div class="iblocks">${Object.entries(CATS).map(([k,c])=>`<div class="ibrow"><span><i class="dot" style="background:${c.color}"></i>${c.label}</span><div class="itrack"><i style="width:${(byCat[k]/maxCat*100).toFixed(1)}%;background:${c.color}"></i></div><span class="num">${fmt(byCat[k])}</span></div>`).join('')}</div>
-    <div class="sub">${card?'Compras do cartão entram na data de vencimento da fatura.':'Lançamentos entram na data do extrato.'} Já vencidos ficam como pagos/recebidos. O que já estava previsto é conciliado, sem duplicar.</div>
+    <div class="sub">${card?'Compras do cartão entram na fatura em que o banco cobra e ficam pendentes até a fatura ser paga. Parceladas projetam as próximas parcelas, que são conciliadas quando chegarem do banco.':'Lançamentos entram na data do extrato; os já vencidos ficam como pagos ou recebidos.'} O que já estava previsto é conciliado, sem duplicar.</div>
     <div class="tbl-wrap itbl"><table class="tbl"><thead><tr><th></th>${multi?'<th>Conta</th>':''}<th>Data</th><th>Descrição</th><th>Valor</th><th>Entra em</th><th>Classificação</th>${card?'<th>Quem usou?</th>':''}<th>Situação</th></tr></thead><tbody>
     ${IM.rows.map((r,i)=>`<tr class="${r.include?'':'off'}" style="animation-delay:${Math.min(i,20)*30}ms">
       <td><input type="checkbox" data-ri="${i}" ${r.include?'checked':''} aria-label="Incluir linha"></td>
@@ -3232,6 +3289,9 @@ function renderPreview(){
         : (r.xfer||r.xpartner!=null)?(()=>{ const oa = r.xfer ? accById(r.xfer.other) : accById(IM.rows[r.xpartner].accId), me=accById(r.accId), f=r.kind==='out'?me:oa, t=r.kind==='out'?oa:me;
           if (r.xpartner!=null && !r.include && r.xdec==='transfer') return `<span class="chip">faz par com a transferência ${esc(f?f.name:'')} → ${esc(t?t.name:'')}</span>`;
           return `<div class="flex flex-col gap-1"><span class="chip" style="color:var(--cal-bal);border-color:color-mix(in srgb,var(--cal-bal) 45%,var(--line))">parece transferência: ${esc(f?f.name:'')} → ${esc(t?t.name:'')}</span><select class="inp" data-rx="${i}" style="padding:4px 6px"><option value="transfer" ${r.xdec==='transfer'?'selected':''}>Transferência (não conta)</option><option value="keep" ${r.xdec==='keep'?'selected':''}>${r.kind==='out'?'Saída':'Entrada'} normal</option></select></div>`; })()
+        : r.parcCovered!=null?`<span class="chip" title="A compra parcelada criada pela parcela ${IM.rows[r.parcCovered].parc.k}/${r.parc.n} já projeta esta">parcela ${r.parc.k}/${r.parc.n} · já projetada</span>`
+        : (r.match&&r.match.parc)?`<span class="chip ok">concilia a parcela prevista “${esc(r.match.name)}”</span>`
+        : (r.parc&&!r.match&&!r.dup)?`<span class="chip" style="color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))">parcelada ${r.parc.k}/${r.parc.n} · projeta até ${mLabel(addM(r.m, r.parc.n-r.parc.k))}</span>`
         : r.similar?`<div class="flex flex-col gap-1"><span class="chip low" title="Mesmo valor (ou quase) e data próxima">parece já lançado: “${esc(r.similar.name)}” · dia ${r.similar.day}</span><select class="inp" data-rd="${i}" style="padding:4px 6px"><option value="merge" ${r.decision==='merge'?'selected':''}>Mesclar com o existente</option><option value="import" ${r.decision==='import'?'selected':''}>Importar mesmo assim</option></select></div>`:r.dup?'<span class="chip low">já importado</span>':r.payment?'<span class="chip low">pagamento da fatura</span>':r.match?`<span class="chip ok" title="Marca o previsto como ${r.kind==='in'?'recebido':'pago'}">concilia “${esc(r.match.name)}”</span>`:`<span class="chip">novo · ${r.done?(r.kind==='in'?'recebido':'pago'):'previsto'}</span>`}</td>
     </tr>`).join('')}</tbody></table></div>
     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -3268,7 +3328,10 @@ function doImport(){
       const e={id:uid(), kind:'transfer', type:'single', name:'Transferência '+(accById(f.accId)?.name||'')+' → '+(accById(t.accId)?.name||''), start:r.m, day:r.day, amount:r.amount, fromId:f.accId, toId:t.accId, accountId:null, importKey:r.importKey, dayRule:'fixed'};
       S.entries.push(e); if (r.done) S.status[e.id+'|'+r.m]=true; (S.imported=S.imported||{})[r.importKey]=1; (S.imported)[q.importKey]=1; xfers++; continue; }
     const other = r.kind==='out' && r.who!=='me';
-    const e={id:uid(), kind:r.kind, type:'single', name:r.desc, start:r.m, day:r.day, amount:r.amount, accountId:a.id, importKey:r.importKey};
+    let e={id:uid(), kind:r.kind, type:'single', name:r.desc, start:r.m, day:r.day, amount:r.amount, accountId:a.id, importKey:r.importKey};
+    // compra parcelada: a parcela atual cai nesta fatura e as próximas ficam projetadas nos meses seguintes (k0/ofN guardam a numeração do banco)
+    if (r.parc && r.kind==='out'){ const rest=r.parc.n-r.parc.k+1; delete e.amount;
+      e = {...e, type:'installment', name:r.parc.base||r.desc, n:rest, total:r2(r.amount*rest), k0:r.parc.k, ofN:r.parc.n, dayRule:'fixed'}; }
     if (r.kind==='out'){ e.cat=r.cat; e.method=a.kind==='card'?'Cartão':'Débito'; e.whoUsed=other?'other':'me'; e.whoName=other?r.who:''; }
     S.entries.push(e); if (r.done) S.status[e.id+'|'+r.m]=true; syncReimb(e); created++;
   }
@@ -3451,13 +3514,18 @@ function reviewOF(){
       S.accounts.push(acc); v=acc.id;
     }
     links[a.id]=v;
+    // cartão já ligado: completa fechamento e vencimento com o que o banco informa
+    const acc=accById(v); if (acc && acc.kind==='card'){ if (!acc.closeDay && a.closeDate) acc.closeDay=+String(a.closeDate).slice(8,10); if (!acc.dueDay && a.dueDate) acc.dueDay=+String(a.dueDate).slice(8,10); }
   }
   save();
+  const billDue={}; for (const b of (d.bills||[])) if (b && b.id && b.dueDate) billDue[b.id]=String(b.dueDate).slice(0,10);
   const raw=[];
   for (const t of d.transactions){
     const to=links[t.accountId]; if (!to || to==='skip' || !accById(to)) continue;
     const dt=new Date(t.date); const date=isNaN(dt)?String(t.date).slice(0,10):isoOf(dt);
-    raw.push({accId:to, date, desc:t.description, amount:Math.abs(t.amount)*(t.type==='DEBIT'?-1:1), kind:t.type==='DEBIT'?'out':'in', key:'pluggy:'+t.id, pending:t.status==='PENDING'});
+    const cc=t.ccm||{}, pd=cc.purchaseDate?isoOf(new Date(cc.purchaseDate)):null;
+    raw.push({accId:to, date:(pd&&/^\d{4}-/.test(pd))?pd:date, desc:t.description, amount:Math.abs(t.amount)*(t.type==='DEBIT'?-1:1), kind:t.type==='DEBIT'?'out':'in', key:'pluggy:'+t.id, pending:t.status==='PENDING',
+      billDue: cc.billId ? billDue[cc.billId]||null : null, parcK: cc.installmentNumber||null, parcN: cc.totalInstallments||null});
   }
   close();
   const first=raw[0] ? raw[0].accId : (S.accounts[0]&&S.accounts[0].id);

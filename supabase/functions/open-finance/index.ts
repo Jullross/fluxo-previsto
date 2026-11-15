@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     const from = /^\d{4}-\d{2}-\d{2}$/.test(body.from ?? "") ? body.from! : new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
     const to = /^\d{4}-\d{2}-\d{2}$/.test(body.to ?? "") ? body.to! : today;
 
-    const banks: unknown[] = [], accounts: unknown[] = [], transactions: unknown[] = [];
+    const banks: unknown[] = [], accounts: unknown[] = [], transactions: unknown[] = [], bills: unknown[] = [];
     for (const itemId of itemIds) {
       const short = itemId.length > 14 ? itemId.slice(0, 8) + "…" : itemId;
       // 3. Banco (item): um ID com problema não impede os outros de sincronizar
@@ -117,13 +117,23 @@ Deno.serve(async (req) => {
           name: a.marketingName || a.name, number: a.number, balance: a.balance,
           closeDate: a.creditData?.balanceCloseDate ?? null, dueDate: a.creditData?.balanceDueDate ?? null,
         });
+        // Faturas do cartão: vencimento de cada fatura, para cada compra cair no mês certo
+        if (a.type === "CREDIT") {
+          try {
+            const bl: any = await pluggy(`/bills?accountId=${encodeURIComponent(a.id)}`, apiKey);
+            for (const x of bl.results ?? []) bills.push({ id: x.id, accountId: a.id, dueDate: x.dueDate ?? null, totalAmount: x.totalAmount ?? null });
+          } catch (e) { console.error("faturas_falharam", String((e as Error).message ?? e)); }
+        }
         // 4. Transações do período, com paginação por cursor (no máximo 20 páginas de 500)
         let next: string | null = `?accountId=${encodeURIComponent(a.id)}&dateFrom=${from}&dateTo=${to}`;
         try {
           for (let page = 0; next && page < 20; page++) {
             const r: any = await pluggy(`/v2/transactions${next}`, apiKey);
             for (const t of r.results ?? []) {
-              transactions.push({ id: t.id, accountId: a.id, date: t.date, description: t.description || t.descriptionRaw || "", amount: t.amount, type: t.type, status: t.status });
+              const cc = t.creditCardMetadata ?? null;
+              transactions.push({ id: t.id, accountId: a.id, date: t.date, description: t.description || t.descriptionRaw || "", amount: t.amount, type: t.type, status: t.status,
+                // cartão: parcela atual, total de parcelas, data da compra e a fatura (bill) a que pertence
+                ccm: cc ? { installmentNumber: cc.installmentNumber ?? null, totalInstallments: cc.totalInstallments ?? null, totalAmount: cc.totalAmount ?? null, purchaseDate: cc.purchaseDate ?? null, billId: cc.billId ?? null } : null });
             }
             next = r.next ?? null;
           }
@@ -132,7 +142,7 @@ Deno.serve(async (req) => {
         }
       }
     }
-    return json(req, 200, { from, to, banks, accounts, transactions });
+    return json(req, 200, { from, to, banks, accounts, transactions, bills });
   } catch (e) {
     console.error("pluggy", String((e as Error).message ?? e));
     return json(req, 502, { error: "pluggy", message: String((e as Error).message ?? e) });

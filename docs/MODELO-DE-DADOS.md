@@ -40,6 +40,7 @@ RLS ligado, com 4 políticas (lê, cria, atualiza, apaga), todas com `auth.uid()
 | `amount` | Valor de um lançamento único |
 | `changes[]` | Recorrentes: `{from, amount}`, o valor muda a partir do mês indicado |
 | `total`, `n` | Parcelados: valor total e número de parcelas |
+| `k0`, `ofN` | Parcelados importados do banco: número da primeira parcela lançada e total de parcelas da compra (ex.: começou na 3 de 10) |
 | `method`, `accountId` | Forma de pagamento e conta ou cartão |
 | `whoUsed`, `whoName` | Gasto de outra pessoa no seu cartão |
 | `reimbursementFor` | Liga o reembolso previsto ao gasto de origem |
