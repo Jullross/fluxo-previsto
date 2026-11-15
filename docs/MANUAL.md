@@ -32,7 +32,9 @@ Os dados ficam na sua conta (Supabase) e aparecem em qualquer aparelho em que vo
 
 - **O saldo de hoje fica preso ao valor que você informou.** Lançamentos de meses anteriores não mudam esse número.
 - **Lançamentos importados de meses passados** ficam só como registro ("histórico · não altera o saldo"): aparecem na lista e na divisão por categoria, mas não mexem em saldo de dia nem de mês.
-- **Se o saldo de hoje não bater com o banco,** some o saldo de todas as contas no app de cada banco e coloque o total em Ajustes → "Quanto você tem hoje". O histórico não muda.
+- **Conferir com os bancos** (Bancos → "Conferir saldo com os bancos", ou Mais → Conferir saldo): digite o saldo que aparece agora em cada conta (vale-refeição também). O app mostra a soma, o que ele diz hoje e a diferença; "Ajustar o app" deixa os dois iguais sem mudar o histórico.
+- **Saldos que se preenchem sozinhos:** contas do Open Finance trazem o saldo a cada sincronização, e o saldo de um extrato ou print importado fica guardado na conta.
+- **Aviso automático:** quando todas as contas têm saldo dos últimos 3 dias e a soma não bate com o app, o sino avisa "O app está R$ X abaixo/acima dos seus bancos". Antes de ajustar, procure um lançamento que faltou ou um pago/pendente trocado.
 
 ## 4. Telas
 
@@ -89,7 +91,7 @@ Mais → Open Finance (só para a dona do app) sincroniza as contas e os cartõe
 
 | Situação | O que fazer |
 | --- | --- |
-| "Quanto eu tenho hoje" diferente do banco | Some o saldo de todas as contas (inclusive vale-refeição) e coloque em Ajustes → "Quanto você tem hoje" |
+| "Quanto eu tenho hoje" diferente do banco | Abra "Conferir saldo com os bancos", digite o saldo de cada conta e veja a diferença; procure o lançamento que faltou ou toque em "Ajustar o app" |
 | Gastos do vale aparecem, mas o dinheiro do vale não | Cadastre o vale como conta e lance o crédito mensal como entrada recorrente |
 | Compra do cartão no mês errado | Confira o fechamento e o vencimento do cartão em Bancos e cartões |
 | O app não mostra uma função nova | Feche e abra o app. Confira se está no endereço jullross.github.io/fluxo-previsto, não num ícone antigo |

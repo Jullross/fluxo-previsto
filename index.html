@@ -554,6 +554,10 @@ button:active:not(:disabled),.btn:active:not(:disabled),label.btn:active{transfo
 .ikpi.focus .label{color:var(--fg);font-weight:700}
 .ikpi.focus b{font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--fg);line-height:1.1}
 .ikpi.focus .sub{color:var(--muted)}
+.ck-row{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.ck-row .n{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ck-row .n b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:480px){.ck-row{grid-template-columns:minmax(0,1fr) 130px}}
 .isaldo{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:12px 14px;border-radius:14px;border:1px dashed var(--line-strong);background:var(--bg)}
 .isaldo .v{display:flex;flex-direction:column;gap:2px;min-width:0}
 .isaldo .v b{font-size:20px;font-weight:600}
@@ -1031,6 +1035,7 @@ body:not(.locked) #auth{display:none!important}
     <div class="label">Ferramentas</div>
     <div class="more-grid">
       <button type="button" data-more="of" data-of hidden><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg></span>Open Finance</button>
+      <button type="button" data-more="check"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Conferir saldo</button>
       <button type="button" data-more="banks"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10M19 21V10M9.5 21V10M14.5 21V10M12 3 3 8h18z"/></svg></span>Bancos e cartões</button>
       <button type="button" data-more="import"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg></span>Sincronizar extrato</button>
       <button type="button" data-more="export"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span>Exportar relatórios</button>
@@ -1190,6 +1195,20 @@ body:not(.locked) #auth{display:none!important}
 </div>
 <datalist id="people"></datalist>
 
+<!-- Modal: conferir saldo com os bancos -->
+<div class="overlay" id="m-check" hidden>
+  <div class="sheet flex flex-col gap-4" style="max-width:560px">
+    <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-1"><span class="label">Conferir com os bancos</span><h3 class="disp text-xl font-bold">O app bate com as suas contas?</h3></div>
+      <button type="button" class="btn btn-ghost" data-close aria-label="Fechar"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="hint">Digite o saldo que aparece agora no app de cada banco (vale-refeição também). Contas do Open Finance e saldos lidos de extratos já vêm preenchidos.</div>
+    <div id="ck-list" class="flex flex-col gap-2"></div>
+    <div class="ikpis" style="grid-template-columns:repeat(3,minmax(0,1fr))" id="ck-sum"></div>
+    <div class="flex flex-wrap gap-2 justify-end"><button type="button" class="btn" id="ck-save">Só salvar os saldos</button><button type="button" class="btn btn-primary" id="ck-apply">Ajustar o app</button></div>
+  </div>
+</div>
+
 <!-- Modal: pagar fatura -->
 <div class="overlay" id="m-fat" hidden>
   <div class="sheet flex flex-col gap-4" style="max-width:520px">
@@ -1241,6 +1260,7 @@ body:not(.locked) #auth{display:none!important}
     </div>
     <div class="hint">Sem Open Finance, a conexão é pelo arquivo do banco: baixe o extrato ou a fatura em CSV ou OFX no app do banco e importe aqui. Nada sai deste navegador.</div>
     <button type="button" class="btn btn-primary justify-center" data-of hidden id="banks-of">Sincronizar pelo Open Finance</button>
+    <button type="button" class="btn justify-center" id="banks-check">Conferir saldo com os bancos</button>
     <div id="acc-list"></div>
     <form class="flex flex-col gap-3" id="f-acc-form" novalidate style="border-top:1px solid var(--line);padding-top:14px">
       <div class="label" id="a-title">Adicionar banco ou cartão</div>
@@ -1898,6 +1918,10 @@ function computeAlerts(){
       else if (d>7) out.push({a, level:d>15?'high':'mid', title:`Faz ${d} dias que você não extrai o extrato do ${a.name}`, text:'Suba o arquivo para conciliar seu saldo real com o previsto.', ok:'Marcar como conferido', short:`Extrato ${a.name} há ${d} dias sem importar`});
     }
   }
+  const bc=bankCheck();
+  if (bc && bc.fresh && bc.diff!=null && Math.abs(bc.diff)>=1)
+    out.push({a:{id:'__check', name:'Saldo', color:'var(--warn)'}, check:true, level:Math.abs(bc.diff)>=50?'high':'mid', title:`O app está ${fmt(Math.abs(bc.diff))} ${bc.diff>0?'abaixo':'acima'} dos seus bancos`,
+      text:`Seus bancos somam ${fmt(bc.total)} e o app diz ${fmt(bc.now)} hoje. Pode faltar um lançamento ou um pago/pendente trocado; se estiver tudo lançado, ajuste com um toque.`, short:'Saldo diferente dos bancos'});
   return out;
 }
 // Alertas: o sino abre a lista completa; na tela inicial fica só um aviso de 1 linha (dá para dispensar até amanhã).
@@ -1909,7 +1933,7 @@ function alertsHTML(list){
     <div class="alert ${x.level}">
       <span class="ic">${ICON_BELL}</span>
       <div class="txt"><div style="font-weight:600;display:flex;align-items:center;gap:7px"><i class="dot" style="background:${x.a.color}"></i>${esc(x.title)}</div><div class="sub" style="font-size:13px">${esc(x.text)}</div></div>
-      <div class="flex gap-2 flex-wrap"><button type="button" class="btn btn-sm btn-primary" data-aimp="${x.a.id}">Importar arquivo</button><button type="button" class="btn btn-sm" data-aok="${x.a.id}">${x.ok}</button></div>
+      <div class="flex gap-2 flex-wrap">${x.check?`<button type="button" class="btn btn-sm btn-primary" data-check-open>Conferir</button>`:`<button type="button" class="btn btn-sm btn-primary" data-aimp="${x.a.id}">Importar arquivo</button><button type="button" class="btn btn-sm" data-aok="${x.a.id}">${x.ok}</button>`}</div>
     </div>`).join('')}</div>`;
 }
 function renderAlerts(){
@@ -1922,7 +1946,7 @@ function renderAlerts(){
     box.innerHTML = `<div class="alert-line ${list.some(x=>x.level==='high')?'high':''}">
       <span class="ic">${ICON_BELL}</span>
       <button type="button" class="t" data-alerts-open>${list.length===1?esc(list[0].short||list[0].title):list.length+' pendências: '+esc(names.join(' · '))}</button>
-      ${list.length===1?`<button type="button" class="btn btn-sm btn-primary" data-aimp="${list[0].a.id}">Importar</button>`:'<button type="button" class="btn btn-sm" data-alerts-open>Ver</button>'}
+      ${list.length===1?(list[0].check?`<button type="button" class="btn btn-sm btn-primary" data-check-open>Conferir</button>`:`<button type="button" class="btn btn-sm btn-primary" data-aimp="${list[0].a.id}">Importar</button>`):'<button type="button" class="btn btn-sm" data-alerts-open>Ver</button>'}
       <button type="button" class="btn btn-sm btn-ghost x" data-alerts-hide aria-label="Dispensar até amanhã" title="Dispensar até amanhã">${ic('x',14)}</button></div>`;
   }
   if (!$('#m-alerts').hidden) $('#alerts-body').innerHTML = alertsHTML(list);
@@ -1933,6 +1957,7 @@ function bindAlertBtns(){
   $$('[data-aimp]').forEach(b=>b.onclick=()=>{ close(); openImport(b.dataset.aimp); const f=$('#i-file'); try { f.click(); } catch(e) {} });
   $$('[data-aok]').forEach(b=>b.onclick=()=>{ const a=accById(b.dataset.aok); if(!a) return; if (a.kind==='card') a.reviewed[CUR]=true; else a.lastSync=TODAY_ISO; commit(); toast(a.name+' marcado como conferido'); });
   $$('[data-open-banks]').forEach(b=>b.onclick=()=>{ close(); openBanks(); });
+  $$('[data-check-open]').forEach(b=>b.onclick=()=>{ close(); setTimeout(openCheck, 200); });
   $$('[data-alerts-open]').forEach(b=>b.onclick=openAlerts);
   $$('[data-alerts-hide]').forEach(b=>b.onclick=()=>{ pref('alertsHide',TODAY_ISO); renderAlerts(); toast('Aviso escondido até amanhã. O sino continua mostrando tudo.'); });
 }
@@ -3036,6 +3061,40 @@ $('#f-entry').addEventListener('submit',ev=>{
   if (moved) toast(`Sua conta agora começa em ${mLabel(e.start)} (antes: ${mLabel(moved)}), com o mesmo saldo inicial. Ajuste em Ajustes se precisar.`);
 });
 
+/* ---------- Conferir saldo com os bancos ---------- */
+// Cada conta guarda o último saldo visto no banco (acc.bank = {v, at, src}): Open Finance, extrato importado ou digitado aqui.
+const checkingAccs = () => S.accounts.filter(a=>a.kind==='checking');
+function appNow(){ const cp=cashPlan(P); return cp ? cp.now : null; }
+function bankCheck(){
+  const accs=checkingAccs(); if (!accs.length) return null;
+  const known=accs.filter(a=>a.bank && isFinite(+a.bank.v)), total=r2(known.reduce((s,a)=>s+(+a.bank.v),0)), now=appNow();
+  const fresh = known.length===accs.length && known.every(a=>a.bank.at && daysBetween(a.bank.at, TODAY_ISO)<=3);
+  return {accs, known, total, now, diff: now==null?null:r2(total-now), complete: known.length===accs.length, fresh};
+}
+function openCheck(){
+  const accs=checkingAccs();
+  if (!accs.length){ toast('Cadastre suas contas em Bancos primeiro'); openBanks(); return; }
+  const src={of:'Open Finance', arquivo:'extrato', manual:'você'};
+  $('#ck-list').innerHTML = accs.map(a=>`<div class="ck-row"><div class="n"><b><i class="dot" style="background:${a.color}"></i> ${esc(a.name)}</b>
+      <span class="sub" style="font-size:12px">${a.bank?`${fmt(+a.bank.v)} em ${a.bank.at.slice(8,10)}/${a.bank.at.slice(5,7)} · ${src[a.bank.src]||'você'}`:'saldo ainda não informado'}</span></div>
+      <input class="inp num" data-ck="${a.id}" inputmode="decimal" placeholder="0,00" value="${a.bank?moneyIn(+a.bank.v):''}" aria-label="Saldo agora no ${esc(a.name)}"></div>`).join('');
+  $$('#ck-list [data-ck]').forEach(i=>i.oninput=syncCheck);
+  syncCheck(); $('#m-check').hidden=false;
+}
+function ckValues(){ const v={}; $$('#ck-list [data-ck]').forEach(i=>{ const x=parseMoney(i.value); if (i.value.trim()!=='' && isFinite(x)) v[i.dataset.ck]=x; }); return v; }
+function syncCheck(){
+  const v=ckValues(), total=r2(Object.values(v).reduce((s,x)=>s+x,0)), now=appNow(), diff=now==null?0:r2(total-now), all=Object.keys(v).length===checkingAccs().length;
+  $('#ck-sum').innerHTML = `<div class="ikpi"><span class="label">Soma dos bancos</span><b class="num">${fmt(total)}</b></div>
+    <div class="ikpi"><span class="label">O app diz hoje</span><b class="num">${fmt(now||0)}</b></div>
+    <div class="ikpi ${Math.abs(diff)<0.01?'':'focus'}" style="grid-column:auto"><span class="label">Diferença</span><b class="num ${Math.abs(diff)<0.01?'c-in':''}" style="${Math.abs(diff)<0.01?'':'font-size:22px'}">${Math.abs(diff)<0.01?'Bate':(diff>0?'+':'−')+fmt(Math.abs(diff))}</b>${!all?'<span class="sub" style="font-size:12px">falta preencher alguma conta</span>':''}</div>`;
+  $('#ck-apply').disabled = !all || Math.abs(diff)<0.01;
+  $('#ck-apply').textContent = Math.abs(diff)<0.01 ? 'Já está certo' : `Ajustar o app para ${fmt(total)}`;
+}
+function saveCheck(){ const v=ckValues(); for (const a of checkingAccs()) if (v[a.id]!==undefined && (!a.bank || Math.abs(+a.bank.v-v[a.id])>0.004 || a.bank.at!==TODAY_ISO)) a.bank={v:v[a.id], at:TODAY_ISO, src:'manual'}; return v; }
+$('#ck-save').onclick=()=>{ saveCheck(); commit(); close(); toast('Saldos dos bancos salvos'); };
+$('#ck-apply').onclick=()=>{ const v=saveCheck(), total=r2(Object.values(v).reduce((s,x)=>s+x,0)); commit(); setTodayBalance(total); close(); toast('O app agora bate com os bancos: '+fmt(total)); };
+$('#banks-check').onclick=()=>{ close(); setTimeout(openCheck, 200); };
+
 /* ---------- Pagar fatura (total, parcial ou não paguei) ---------- */
 let PF=null;
 function openFatPay(k){
@@ -3332,6 +3391,7 @@ function renderPreview(){
   const maxCat=Math.max(1,...Object.values(byCat));
   const kp=(l,v,cls,wrap,sub)=>`<div class="ikpi ${wrap||''}"><span class="label">${l}</span><b class="num ${cls||''}">${v}</b>${sub?`<span class="sub" style="font-size:12px">${sub}</span>`:''}</div>`;
   const saldo = IM.saldo && acc0 && acc0.kind!=='card' ? IM.saldo : null;
+  const others = saldo ? checkingAccs().filter(a=>a.id!==acc0.id && a.bank && isFinite(+a.bank.v)).reduce((s,a)=>s+(+a.bank.v),0) : 0;
   const outFile = IM.rows.filter(r=>r.kind==='out').reduce((a,r)=>a+r.amount,0);
   box.innerHTML = `
     <div class="flex flex-col gap-4 enter">
@@ -3343,8 +3403,8 @@ function renderPreview(){
     ${saldo?`<div class="isaldo">
       <div class="v"><span class="label">Saldo disponível no arquivo</span><b class="num">${fmt(saldo.value)}</b><span class="sub" style="font-size:12px">${saldo.date?'em '+saldo.date.slice(8,10)+'/'+saldo.date.slice(5,7)+' · ':''}não entra como gasto</span></div>
       <div class="ask"><label class="flex items-center gap-2" style="font-weight:600"><input type="checkbox" id="i-saldo-on" ${IM.saldoOn?'checked':''}> Usar como o meu saldo de hoje</label>
-        <input class="inp num" id="i-saldo-v" inputmode="decimal" value="${moneyIn(IM.saldoV!=null?IM.saldoV:saldo.value)}" aria-label="Saldo de hoje, somando as contas">
-        <span class="sub" style="font-size:12px;flex-basis:100%">Some o que tiver em outras contas. Isso ajusta o "Quanto eu tenho hoje" sem mudar o histórico.</span></div>
+        <input class="inp num" id="i-saldo-v" inputmode="decimal" value="${moneyIn(IM.saldoV!=null?IM.saldoV:r2(saldo.value+others))}" aria-label="Saldo de hoje, somando as contas">
+        <span class="sub" style="font-size:12px;flex-basis:100%">${others?`Já somei ${fmt(r2(others))} das suas outras contas (último saldo conhecido). `:'Some o que tiver em outras contas. '}Isso ajusta o "Quanto eu tenho hoje" sem mudar o histórico.</span></div>
     </div>`:''}
     <div class="iblocks">${Object.entries(CATS).map(([k,c])=>`<div class="ibrow"><span><i class="dot" style="background:${c.color}"></i>${c.label}</span><div class="itrack"><i data-bar="${k}" style="width:${(byCat[k]/maxCat*100).toFixed(1)}%;background:${c.color};transition:width .35s var(--ease,ease)"></i></div><span class="num" data-barv="${k}">${fmt(byCat[k])}</span></div>`).join('')}</div>
     <div class="sub">${card?'Compras do cartão entram na fatura em que o banco cobra e ficam pendentes até a fatura ser paga. Parceladas projetam as próximas parcelas, que são conciliadas quando chegarem do banco.':'Lançamentos entram na data do extrato; os já vencidos ficam como pagos ou recebidos.'} O que já estava previsto é conciliado, sem duplicar.</div>
@@ -3414,7 +3474,9 @@ function doImport(){
   }
   for (const id of touched){ const a=accById(id); if (!a) continue; if (a.kind==='card') a.reviewed[CUR]=true; a.lastSync=TODAY_ISO; }
   if (IM.of){ S.settings.of = {...(S.settings.of||{}), lastSync: TODAY_ISO}; }
-  const saldoHoje = IM.saldoOn && IM.saldo ? (isFinite(IM.saldoV)&&IM.saldoV!=null ? IM.saldoV : IM.saldo.value) : null;
+  { const a0=accById(IM.accId); if (IM.saldo && a0 && a0.kind==='checking' && isFinite(+IM.saldo.value)) a0.bank={v:r2(+IM.saldo.value), at:IM.saldo.date||TODAY_ISO, src:'arquivo'}; }
+  const others0 = checkingAccs().filter(a=>a.id!==IM.accId && a.bank && isFinite(+a.bank.v)).reduce((s,a)=>s+(+a.bank.v),0);
+  const saldoHoje = IM.saldoOn && IM.saldo ? (isFinite(IM.saldoV)&&IM.saldoV!=null ? IM.saldoV : r2(IM.saldo.value+others0)) : null;
   commit();
   if (saldoHoje!=null) setTodayBalance(saldoHoje);
   close(); toast(`${created} novos, ${matched} conciliados com o previsto`+(fats?`, ${fats} ${fats===1?'baixa':'baixas'} de fatura`:'')+(xfers?`, ${xfers} ${xfers===1?'transferência':'transferências'}`:'')+(saldoHoje!=null?` · saldo de hoje: ${fmt(saldoHoje)}`:''));
@@ -3595,7 +3657,9 @@ function reviewOF(){
     }
     links[a.id]=v;
     // cartão já ligado: completa fechamento e vencimento com o que o banco informa
-    const acc=accById(v); if (acc && acc.kind==='card'){ if (!acc.closeDay && a.closeDate) acc.closeDay=+String(a.closeDate).slice(8,10); if (!acc.dueDay && a.dueDate) acc.dueDay=+String(a.dueDate).slice(8,10); }
+    const acc=accById(v);
+    if (acc && acc.kind==='checking' && isFinite(+a.balance)) acc.bank={v:r2(+a.balance), at:TODAY_ISO, src:'of'};
+    if (acc && acc.kind==='card'){ if (!acc.closeDay && a.closeDate) acc.closeDay=+String(a.closeDate).slice(8,10); if (!acc.dueDay && a.dueDate) acc.dueDay=+String(a.dueDate).slice(8,10); }
   }
   save();
   const billDue={}; for (const b of (d.bills||[])) if (b && b.id && b.dueDate) billDue[b.id]=String(b.dueDate).slice(0,10);
@@ -4138,6 +4202,7 @@ $$('[data-more]').forEach(b=>b.onclick=()=>{
   else if (k==='import') openImport();
   else if (k==='export') $('#btn-export').click();
   else if (k==='settings') openSettings();
+  else if (k==='check') openCheck();
   else if (k==='account') openAccount();
   else if (k==='alerts') openAlerts();
   else if (k==='theme') $('#btn-theme').click();

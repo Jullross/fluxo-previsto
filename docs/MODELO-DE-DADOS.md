@@ -17,7 +17,7 @@ RLS ligado, com 4 políticas (lê, cria, atualiza, apaga), todas com `auth.uid()
 | Chave | Conteúdo |
 | --- | --- |
 | `settings` | `anchor` (`{m, start}`: saldo real fixado no início de um mês), `baseMonth` (`AAAA-MM`), `initialBalance`, `targets`, `targetMode`, `accent`, `weekendWeight`, `of` |
-| `accounts[]` | `id`, `name`, `kind` (`checking` ou `card`), `color`, `closeDay`, `dueDay`, `holder` (`own`, `shared`, `third`), `holderName`, `lastSync`, `reviewed` |
+| `accounts[]` | `id`, `name`, `kind` (`checking` ou `card`), `color`, `closeDay`, `dueDay`, `holder` (`own`, `shared`, `third`), `holderName`, `lastSync`, `reviewed`, `bank` (`{v, at, src}`: último saldo visto no banco) |
 | `entries[]` | Lançamentos (abaixo) |
 | `debts[]` | `name`, `creditor`, `original`, `current`, `cashOffer`, `instN`, `instAmount`, `simulate`, `simMode`, `simMonth` |
 | `status` | Mapa `"<id>|AAAA-MM": true` = pago ou recebido naquele mês |
