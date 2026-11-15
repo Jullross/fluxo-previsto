@@ -16,7 +16,7 @@
 
 | Área | O que entrega |
 | --- | --- |
-| Projeção | Saldo de hoje, do fim do mês e de cada dia, em cascata mês a mês |
+| Projeção | Saldo de hoje, do fim do mês e de cada dia, em cascata mês a mês; o saldo de hoje fica preso ao valor real informado e importações de meses passados não o alteram |
 | Lançamentos | Únicos, recorrentes (com mudança de valor a partir de um mês) e parcelados; pago/recebido; edição rápida na lista |
 | Dias úteis | 5º dia útil, último dia útil, antecipar ou adiar em feriados nacionais (e do RJ, opcional) |
 | Método do Breno Nogueira | Quatro blocos: Essencial, Estilo de vida, Parcelas e dívidas, Metas e aportes, com metas 50/30/20 |
@@ -25,7 +25,7 @@
 | Dívidas | Cadastro, conselheiro e simulação de quitação |
 | Desafio do mês | Meta de economia Leve, Ideal ou Hardcore, recalculada pela renda |
 | Cartões de família | Gasto de outra pessoa no seu cartão vira reembolso previsto |
-| Faturas e transferências | Fatura de cartão com baixa total ou parcial e saldo em aberto no mês seguinte; transferências entre contas próprias fora de entradas e saídas |
+| Faturas e transferências | Compra no cartão na fatura do vencimento e pendente até a baixa; parcelas projetadas e conciliadas; baixa total ou parcial com saldo em aberto no mês seguinte; transferências entre contas próprias fora de entradas e saídas |
 | Importação | CSV, OFX, PDF e prints em JPG ou PNG (lidos por IA), com conciliação e aviso de duplicidade |
 | Open Finance | Sincronização pelo Meu Pluggy |
 | Conforto | Tema claro e escuro, modo privacidade, 5 telas com gesto no celular, funciona offline |
