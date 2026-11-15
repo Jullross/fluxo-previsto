@@ -16,7 +16,7 @@ RLS ligado, com 4 políticas (lê, cria, atualiza, apaga), todas com `auth.uid()
 
 | Chave | Conteúdo |
 | --- | --- |
-| `settings` | `baseMonth` (`AAAA-MM`), `initialBalance`, `targets`, `targetMode`, `accent`, `weekendWeight`, `of` |
+| `settings` | `anchor` (`{m, start}`: saldo real fixado no início de um mês), `baseMonth` (`AAAA-MM`), `initialBalance`, `targets`, `targetMode`, `accent`, `weekendWeight`, `of` |
 | `accounts[]` | `id`, `name`, `kind` (`checking` ou `card`), `color`, `closeDay`, `dueDay`, `holder` (`own`, `shared`, `third`), `holderName`, `lastSync`, `reviewed` |
 | `entries[]` | Lançamentos (abaixo) |
 | `debts[]` | `name`, `creditor`, `original`, `current`, `cashOffer`, `instN`, `instAmount`, `simulate`, `simMode`, `simMonth` |

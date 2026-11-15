@@ -542,20 +542,21 @@ button:active:not(:disabled),.btn:active:not(:disabled),label.btn:active{transfo
 .collapse-y > div{min-height:0;overflow:hidden}
 .collapse-y.shut{grid-template-rows:0fr;opacity:0;pointer-events:none}
 #m-import .drop{padding:30px 16px;gap:10px;border-color:var(--line-strong);background:color-mix(in srgb,var(--accent) 4%,transparent);border-radius:16px}
-.ikpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ikpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 @media (max-width:680px){.ikpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ikpi{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);min-width:0}
 .ikpi b{font-weight:500;font-size:18px;overflow-wrap:anywhere}
-.iimpact{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:stretch}
-.iimpact .arrow{display:grid;place-items:center;color:var(--faint)}
-.iimpact .ikpi.after{border-color:color-mix(in srgb,var(--go-text) 45%,var(--line));background:color-mix(in srgb,var(--go) 8%,var(--bg))}
-.iimpact .ikpi.after b{color:var(--go-text);font-size:22px}
-.iimpact .ikpi.after.neg{border-color:color-mix(in srgb,var(--stop-text) 55%,var(--line));background:color-mix(in srgb,var(--stop) 9%,var(--bg))}
-.iimpact .ikpi.after.neg b{color:var(--stop-text)}
-.iimpact .delta{font-size:12.5px;font-family:var(--f-num);color:var(--muted)}
+.ikpi.focus{grid-column:span 2;border:1.5px solid var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--bg));padding:14px 16px}
+.ikpi.focus .label{color:var(--fg);font-weight:700}
+.ikpi.focus b{font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--fg);line-height:1.1}
+.ikpi.focus .sub{color:var(--muted)}
+.isaldo{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:12px 14px;border-radius:14px;border:1px dashed var(--line-strong);background:var(--bg)}
+.isaldo .v{display:flex;flex-direction:column;gap:2px;min-width:0}
+.isaldo .v b{font-size:20px;font-weight:600}
+.isaldo .ask{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;flex:1 1 280px;min-width:0}
+.isaldo .ask .inp{max-width:180px}
 .ik-flash{animation:ikFlash .45s var(--ease,ease)}
 @keyframes ikFlash{0%{opacity:.35;transform:translateY(2px)}100%{opacity:1;transform:none}}
-@media (max-width:560px){.iimpact{grid-template-columns:minmax(0,1fr)}.iimpact .arrow{transform:rotate(90deg);height:18px}}
 .iblocks{display:flex;flex-direction:column;gap:10px}
 .ibrow{display:grid;grid-template-columns:170px minmax(0,1fr) 120px;gap:12px;align-items:center;font-size:14px}
 .ibrow > span:first-child{display:flex;align-items:center;gap:8px}
@@ -1338,6 +1339,8 @@ body:not(.locked) #auth{display:none!important}
     <div class="grid grid-cols-2 gap-3">
       <label class="field"><span>Mês de partida</span><input class="inp" id="s-base" type="month"></label>
       <label class="field"><span>Saldo no início desse mês</span><input class="inp num" id="s-balance" inputmode="decimal"></label>
+      <label class="field col-span-2"><span>Quanto você tem hoje, somando as contas</span><input class="inp num" id="s-today" inputmode="decimal">
+        <span class="sub" style="font-weight:400">Ajuste aqui se o "Quanto eu tenho hoje" não bater com o banco. Lançamentos de meses anteriores não mudam esse valor.</span></label>
     </div>
     <div class="flex flex-col gap-3">
       <div class="label">Metas da divisão da renda</div>
@@ -1806,7 +1809,21 @@ function project(entries=allEntries()){
     }
     Object.assign(row,{days,dayIn,dayOut,end:r2(bal+row.inTotal-row.outTotal)}); bal=row.end; rows.push(row);
   }
+  // Âncora: o saldo real que a pessoa informou fica fixo no mês em que foi informado.
+  // Lançamentos de meses anteriores só mudam o histórico para trás, nunca o "Quanto eu tenho hoje".
+  const A=S.settings.anchor;
+  if (A && /^\d{4}-\d{2}$/.test(A.m||'') && isFinite(+A.start)){
+    const ar=rows.find(x=>x.m===A.m);
+    if (ar){ const off=r2(+A.start-ar.start); if (Math.abs(off)>0.004) for (const x of rows){ x.start=r2(x.start+off); x.end=r2(x.end+off); for (let d=1; d<x.days.length; d++) x.days[d]=r2(x.days[d]+off); } }
+  }
   return rows;
+}
+// Define o saldo de hoje (somando as contas): a âncora passa a ser o início do mês atual que leva a esse valor
+function setTodayBalance(v){
+  const r=project().find(x=>x.m===CUR); if (!r) return;
+  const curNow=r2(r.start + r.inDone - r.outDone);
+  S.settings.anchor={m:CUR, start:r2(r.start + (v-curNow))};
+  commit();
 }
 function lowFrom(Pset, m, d){
   const i=Pset.findIndex(r=>r.m===m); if (i<0) return null;
@@ -1822,6 +1839,8 @@ function render(){
   for (const a of S.accounts){ const c=cleanAccName(a.name); if (c && c!==a.name) a.name=c; }
   if (!document.body.dataset.screen) document.body.dataset.screen=screen;
   P = project();
+  // primeira vez na v23: fixa o saldo atual como âncora, para importações de meses passados não mudarem o saldo de hoje
+  if (!S.settings.anchor && (S.entries||[]).length && (()=>{ try { return !!USER; } catch(e){ return false; } })()){ const rc=P.find(x=>x.m===CUR); if (rc){ S.settings.anchor={m:CUR, start:rc.start}; save(); } }
   if (!P.find(r=>r.m===sel)) sel = P.find(r=>r.m===CUR)? CUR : P[0].m;
   const r=P.find(x=>x.m===sel);
   renderPeople(); renderBanner(); renderAlerts(); renderStrip(); renderHero(r); renderThermo(); renderSim();
@@ -3103,7 +3122,7 @@ function openImport(accId){
   if (!S.accounts.length){ openBanks(); toast('Cadastre o banco ou cartão antes de importar'); return; }
   IM={accId: accId||S.accounts[0].id, rows:[], file:''};
   $('#i-acc').innerHTML = S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)} · ${a.kind==='card'?'cartão':'conta'}</option>`).join('');
-  $('#i-acc').value=IM.accId; $('#i-file').value=''; $('#i-preview').innerHTML=''; setIStep(1);
+  $('#i-acc').value=IM.accId; $('#i-file').value=''; $('#i-preview').innerHTML=''; setIStep(1); IM.saldoOn=false; IM.saldoV=null; IM.saldo=null; IM.meta=null;
   $('#m-import').hidden=false;
 }
 $('#i-acc').onchange=()=>{ IM.accId=$('#i-acc').value; if (IM.raw && !IM.of) buildRows(IM.raw); };
@@ -3193,7 +3212,16 @@ function parseParc(desc, iso){
   return {k, n, base: base || d.trim()};
 }
 const parcNorm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'').slice(0,10);
+// Linhas de saldo (saldo anterior, disponível, do dia, total...) não são transações: saem da lista e o saldo mais recente vira sugestão
+const SALDO_RE=/^\s*(saldo|sdo)\b|\bsaldo\s+(anterior|disponivel|do dia|final|atual|total|em conta|bloqueado|inicial|liquido|parcial)\b/;
+function splitSaldo(raw){
+  const nrm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const keep=[], sal=[]; for (const r of raw) (SALDO_RE.test(nrm(r.desc))?sal:keep).push(r);
+  const cur=sal.filter(r=>!/anterior|inicial/.test(nrm(r.desc))), pick=(cur.length?cur:sal).slice().sort((a,b)=>a.date<b.date?-1:1).pop();
+  return {keep, count:sal.length, saldo: pick ? {value:r2(pick.amount), date:pick.date} : null};
+}
 function buildRows(raw){
+  { const sp=splitSaldo(raw); raw=sp.keep; IM.saldoRows=sp.count; IM.saldo = (IM.meta && IM.meta.saldo) || sp.saldo; }
   const signFor = {};
   const used=new Set(), keys=new Set([...S.entries.map(e=>e.importKey).filter(Boolean), ...Object.keys(S.imported||{})]);
   IM.rows = raw.map(r=>{
@@ -3272,41 +3300,13 @@ function importStats(){
   const nmerge=IM.rows.filter(r=>r.similar&&r.decision==='merge').length;
   return {selSum:selOut.reduce((a,r)=>a+r.amount,0), byCat, nmerge, n:IM.rows.filter(r=>r.include).length+nmerge, nm:IM.rows.filter(r=>r.include&&r.match).length+nmerge};
 }
-// Impacto no saldo: simula a importação das linhas marcadas no próprio motor e compara o saldo do fim do mês da fatura
-function importImpact(){
-  const sel=IM.rows.filter(r=>r.include);
-  const cnt={}; for (const r of (sel.length?sel:IM.rows)) cnt[r.m]=(cnt[r.m]||0)+1;
-  const m = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||(a<b?-1:1))[0] || sel;
-  const removed=new Set(), extra=[];
-  for (const r of sel){
-    if (r.match || r.fatPay || r.dup) continue;
-    if (r.xdec==='transfer' && r.xfer){ removed.add(r.xfer.entryId); continue; }
-    if (r.xdec==='transfer' && r.xpartner!=null) continue;
-    const e={id:'imp_'+extra.length, kind:r.kind, type:'single', name:r.desc, start:r.m, day:r.day, amount:r.amount, accountId:r.accId, cat:r.kind==='out'?r.cat:undefined};
-    if (r.parc && r.kind==='out'){ const rest=r.parc.n-r.parc.k+1; delete e.amount; Object.assign(e,{type:'installment', n:rest, total:r2(r.amount*rest), k0:r.parc.k, ofN:r.parc.n}); }
-    extra.push(e);
-  }
-  const before=P.find(x=>x.m===m);
-  if (!before) return null;
-  const after = (extra.length||removed.size) ? project([...allEntries().filter(e=>!removed.has(e.id)), ...extra]).find(x=>x.m===m) : before;
-  const later = extra.some(e=>e.type==='installment' && e.n>1);
-  return {m, before:before.end, after:after?after.end:before.end, later};
-}
 function updateImpactUI(flash){
   const box=$('#i-preview'); if (!box || !$('#ik-after')) return;
-  const st=importStats(), im=importImpact();
+  const st=importStats();
   const set=(id,v)=>{ const el=$(id); if (!el) return; if (el.textContent!==v){ el.textContent=v; if (flash){ el.classList.remove('ik-flash'); void el.offsetWidth; el.classList.add('ik-flash'); } } };
   set('#ik-sel', fmt(st.selSum));
   const maxCat=Math.max(1,...Object.values(st.byCat));
   for (const k in CATS){ const b=box.querySelector(`[data-bar="${k}"]`); if (b) b.style.width=(st.byCat[k]/maxCat*100).toFixed(1)+'%'; const v=box.querySelector(`[data-barv="${k}"]`); if (v) v.textContent=fmt(st.byCat[k]); }
-  if (im){
-    set('#ik-mlabel', 'Impacto no saldo de '+mFull(im.m).toLowerCase());
-    set('#ik-before', fmt(im.before)); set('#ik-after', fmt(im.after));
-    const d=r2(im.after-im.before), card=$('#ik-after').closest('.ikpi');
-    card.classList.toggle('neg', im.after<0);
-    set('#ik-delta', (d===0?'sem mudança no saldo':(d<0?'−':'+')+fmt(Math.abs(d))+' com os lançamentos marcados')+(im.later?' · as parcelas seguintes também entram nos próximos meses':''));
-    set('#ik-after-cap', im.after<0 ? 'Saldo do mês fica negativo' : 'Novo saldo projetado');
-  }
   set('#i-sum', `${st.n} selecionados · ${st.nm} conciliam com o que já estava lançado (sem duplicar)${st.nmerge?` · ${st.nmerge} ${st.nmerge===1?'parece repetido e será mesclado':'parecem repetidos e serão mesclados'}`:''}`);
   const go=$('#i-go'); if (go){ go.disabled=!st.n; go.textContent=`Importar ${st.n} ${st.n===1?'lançamento':'lançamentos'}`; }
 }
@@ -3320,22 +3320,22 @@ function renderPreview(){
   const selOut=IM.rows.filter(r=>(r.include||(r.similar&&r.decision==='merge'))&&r.kind==='out'&&!r.fatPay&&!(r.xdec==='transfer'&&(r.xfer||r.xpartner!=null))), selSum=selOut.reduce((a,r)=>a+r.amount,0);
   const byCat={}; for (const k in CATS) byCat[k]=selOut.filter(r=>!r.match&&r.cat===k).reduce((a,r)=>a+r.amount,0);
   const maxCat=Math.max(1,...Object.values(byCat));
-  const kp=(l,v,cls)=>`<div class="ikpi"><span class="label">${l}</span><b class="num ${cls||''}">${v}</b></div>`;
+  const kp=(l,v,cls,wrap,sub)=>`<div class="ikpi ${wrap||''}"><span class="label">${l}</span><b class="num ${cls||''}">${v}</b>${sub?`<span class="sub" style="font-size:12px">${sub}</span>`:''}</div>`;
+  const saldo = IM.saldo && acc0 && acc0.kind!=='card' ? IM.saldo : null;
+  const outFile = IM.rows.filter(r=>r.kind==='out').reduce((a,r)=>a+r.amount,0);
   box.innerHTML = `
     <div class="flex flex-col gap-4 enter">
     <div class="ikpis">
       ${card ? kp('Fechamento', dd(meta.fechamento) || (acc0&&acc0.closeDay?'dia '+acc0.closeDay:'—')) + kp('Vencimento', dd(meta.vencimento) || (acc0&&acc0.dueDay?'dia '+acc0.dueDay:'—')) : kp('Conta', esc(acc0?acc0.name:'—')) + kp('Linhas lidas', IM.rows.length)}
-      ${kp(card?'Total da fatura':'Saídas no arquivo', meta.total!=null?fmt(meta.total):fmt(IM.rows.filter(r=>r.kind==='out').reduce((a,r)=>a+r.amount,0)))}
+      ${kp(card?'Total da fatura':'Saídas no arquivo', meta.total!=null?fmt(meta.total):fmt(outFile), '', 'focus', card?'valor cobrado nesta fatura':`só débitos · ${IM.rows.filter(r=>r.kind==='out').length} ${IM.rows.filter(r=>r.kind==='out').length===1?'saída':'saídas'}${IM.saldoRows?` · ${IM.saldoRows} ${IM.saldoRows===1?'linha de saldo ficou':'linhas de saldo ficaram'} de fora`:''}`)}
       ${kp('Gastos selecionados', fmt(selSum), 'c-acc" id="ik-sel')}
     </div>
-    <div class="flex flex-col gap-2">
-      <span class="label" id="ik-mlabel">Impacto no saldo do mês</span>
-      <div class="iimpact">
-        <div class="ikpi"><span class="label">Saldo previsto antes</span><b class="num" id="ik-before">—</b><span class="sub" style="font-size:12px">fim do mês, como está hoje no app</span></div>
-        <div class="arrow" aria-hidden="true">${ic('arrow',18)}</div>
-        <div class="ikpi after"><span class="label" id="ik-after-cap">Novo saldo projetado</span><b class="num" id="ik-after">—</b><span class="delta" id="ik-delta"></span></div>
-      </div>
-    </div>
+    ${saldo?`<div class="isaldo">
+      <div class="v"><span class="label">Saldo disponível no arquivo</span><b class="num">${fmt(saldo.value)}</b><span class="sub" style="font-size:12px">${saldo.date?'em '+saldo.date.slice(8,10)+'/'+saldo.date.slice(5,7)+' · ':''}não entra como gasto</span></div>
+      <div class="ask"><label class="flex items-center gap-2" style="font-weight:600"><input type="checkbox" id="i-saldo-on" ${IM.saldoOn?'checked':''}> Usar como o meu saldo de hoje</label>
+        <input class="inp num" id="i-saldo-v" inputmode="decimal" value="${moneyIn(IM.saldoV!=null?IM.saldoV:saldo.value)}" aria-label="Saldo de hoje, somando as contas">
+        <span class="sub" style="font-size:12px;flex-basis:100%">Some o que tiver em outras contas. Isso ajusta o "Quanto eu tenho hoje" sem mudar o histórico.</span></div>
+    </div>`:''}
     <div class="iblocks">${Object.entries(CATS).map(([k,c])=>`<div class="ibrow"><span><i class="dot" style="background:${c.color}"></i>${c.label}</span><div class="itrack"><i data-bar="${k}" style="width:${(byCat[k]/maxCat*100).toFixed(1)}%;background:${c.color};transition:width .35s var(--ease,ease)"></i></div><span class="num" data-barv="${k}">${fmt(byCat[k])}</span></div>`).join('')}</div>
     <div class="sub">${card?'Compras do cartão entram na fatura em que o banco cobra e ficam pendentes até a fatura ser paga. Parceladas projetam as próximas parcelas, que são conciliadas quando chegarem do banco.':'Lançamentos entram na data do extrato; os já vencidos ficam como pagos ou recebidos.'} O que já estava previsto é conciliado, sem duplicar.</div>
     <div class="tbl-wrap itbl"><table class="tbl"><thead><tr><th></th>${multi?'<th>Conta</th>':''}<th>Data</th><th>Descrição</th><th>Valor</th><th>Entra em</th><th>Classificação</th>${card?'<th>Quem usou?</th>':''}<th>Situação</th></tr></thead><tbody>
@@ -3369,6 +3369,7 @@ function renderPreview(){
   box.querySelectorAll('[data-rx]').forEach(s=>s.onchange=()=>{ const r=IM.rows[+s.dataset.rx]; r.xdec=s.value; if (r.xpartner!=null){ const q=IM.rows[r.xpartner]; q.xdec=s.value; q.include = s.value==='keep'; } renderPreview(); });
   box.querySelectorAll('[data-rd]').forEach(s=>s.onchange=()=>{ const r=IM.rows[+s.dataset.rd]; r.decision=s.value; r.include = s.value==='import'; renderPreview(); });
   $('#i-go').onclick=doImport;
+  { const on=$('#i-saldo-on'), v=$('#i-saldo-v'); if (on){ on.onchange=()=>{ IM.saldoOn=on.checked; }; v.oninput=()=>{ IM.saldoV=parseMoney(v.value); if (!on.checked){ on.checked=true; IM.saldoOn=true; } }; } }
   updateImpactUI(false);
 }
 function doImport(){
@@ -3402,8 +3403,11 @@ function doImport(){
   }
   for (const id of touched){ const a=accById(id); if (!a) continue; if (a.kind==='card') a.reviewed[CUR]=true; a.lastSync=TODAY_ISO; }
   if (IM.of){ S.settings.of = {...(S.settings.of||{}), lastSync: TODAY_ISO}; }
-  { const early=earliestStart(S.entries); if (early && early<S.settings.baseMonth){ S.settings.baseMonth=early; setTimeout(()=>toast(`Sua conta agora começa em ${mLabel(early)}, mês do lançamento mais antigo. Confira o saldo inicial em Ajustes.`), 2900); } }
-  commit(); close(); toast(`${created} novos, ${matched} conciliados com o previsto`+(fats?`, ${fats} ${fats===1?'baixa':'baixas'} de fatura`:'')+(xfers?`, ${xfers} ${xfers===1?'transferência':'transferências'}`:''));
+  { const early=earliestStart(S.entries); if (early && early<S.settings.baseMonth){ S.settings.baseMonth=early; setTimeout(()=>toast(`O histórico agora vai desde ${mLabel(early)}. O seu saldo de hoje não mudou.`), 2900); } }
+  const saldoHoje = IM.saldoOn && IM.saldo ? (isFinite(IM.saldoV)&&IM.saldoV!=null ? IM.saldoV : IM.saldo.value) : null;
+  commit();
+  if (saldoHoje!=null) setTodayBalance(saldoHoje);
+  close(); toast(`${created} novos, ${matched} conciliados com o previsto`+(fats?`, ${fats} ${fats===1?'baixa':'baixas'} de fatura`:'')+(xfers?`, ${xfers} ${xfers===1?'transferência':'transferências'}`:'')+(saldoHoje!=null?` · saldo de hoje: ${fmt(saldoHoje)}`:''));
 }
 
 
@@ -3462,7 +3466,8 @@ async function readPdfAI(files){
     const {data, error} = await sb.functions.invoke('pdf-import', {body});
     if (error){ let code=null; try { code=(await error.context.json()).error; } catch(e) {} throw {code}; }
     const d=data.data||{}, a=accById(IM.accId);
-    IM.meta={fechamento:d.fechamento||null, vencimento:d.vencimento||null, total:d.total!=null?+d.total:null, banco:d.banco||''};
+    IM.meta={fechamento:d.fechamento||null, vencimento:d.vencimento||null, total:d.total!=null?+d.total:null, banco:d.banco||'',
+      saldo: d.saldo && isFinite(+d.saldo.valor) ? {value:r2(+d.saldo.valor), date:/^\d{4}-\d{2}-\d{2}/.test(d.saldo.data||'')?String(d.saldo.data).slice(0,10):null} : null};
     // fatura de cartão: aproveita fechamento e vencimento lidos do PDF quando o cartão ainda não tem
     if (a && a.kind==='card'){
       const cd=d.fechamento?+String(d.fechamento).slice(8,10):null, dd=d.vencimento?+String(d.vencimento).slice(8,10):null;
@@ -3683,7 +3688,9 @@ let wipeArmed=false, STM='manual';
 const ACCENTS=[['esmeralda','Esmeralda','#0d9488'],['bordo','Bordô','#9f1239'],['ametista','Ametista','#7c3aed'],['grafite','Grafite','#374151']];
 function applyAccent(a){ a = ACCENTS.some(x=>x[0]===a) ? a : 'esmeralda'; document.documentElement.setAttribute('data-accent', a); pref('accent', a); }
 function openSettings(){
-  $('#s-base').value=effBase(); $('#s-balance').value=moneyIn(S.settings.initialBalance);
+  $('#s-base').value=effBase(); { const rb=P.find(x=>x.m===effBase()); $('#s-balance').value=moneyIn(rb?rb.start:S.settings.initialBalance); }
+  { const cp=cashPlan(P); S_TODAY0 = cp ? cp.now : null; $('#s-today').value = cp ? moneyIn(cp.now) : ''; }
+  S_BAL0 = $('#s-balance').value; S_BASE0 = $('#s-base').value;
   const T=S.settings.targets; $('#s-t-ess').value=T.essencial; $('#s-t-est').value=T.estilo; $('#s-t-fm').value=T.fm;
   STM = S.settings.targetMode==='auto' ? 'auto' : 'manual';
   wipeArmed=false; $('#s-wipe').textContent='Limpar todos os meus dados da conta';
@@ -3720,13 +3727,16 @@ function syncSettings(){
 $('#s-tmode').addEventListener('click',ev=>{ const b=ev.target.closest('button'); if(!b) return; STM=b.dataset.v; syncSettings(); });
 ['#s-t-ess','#s-t-est','#s-t-fm'].forEach(k=>$(k).addEventListener('input',syncSettings));
 $('#btn-settings').onclick=openSettings;
+let S_TODAY0=null, S_BAL0=null, S_BASE0=null;
 $('#s-save').onclick=()=>{
   const b=$('#s-base').value, v=parseMoney($('#s-balance').value);
   if (!/^\d{4}-\d{2}$/.test(b) || !isFinite(v)) { toast('Confira o mês e o saldo'); return; }
   const t=k=>Math.min(100,Math.max(0,parseFloat($(k).value)||0));
-  S.settings.baseMonth=b; S.settings.initialBalance=v; S.settings.targetMode=STM;
+  const today=parseMoney($('#s-today').value), todayChanged = isFinite(today) && S_TODAY0!=null && Math.abs(today-S_TODAY0)>0.004;
+  if (b!==S_BASE0 || $('#s-balance').value!==S_BAL0){ S.settings.baseMonth=b; S.settings.initialBalance=v; S.settings.anchor={m:b, start:v}; }
+  S.settings.targetMode=STM;
   if (STM==='manual') S.settings.targets={essencial:t('#s-t-ess'),estilo:t('#s-t-est'),fm:t('#s-t-fm')};
-  commit(); close(); toast('Ajustes salvos');
+  commit(); if (todayChanged) setTodayBalance(today); close(); toast(todayChanged?'Saldo de hoje ajustado para '+fmt(today):'Ajustes salvos');
 };
 $('#s-wipe').onclick=()=>{
   if(!wipeArmed){ wipeArmed=true; $('#s-wipe').textContent='Confirmar: apagar tudo para sempre'; return; }

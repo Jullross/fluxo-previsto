@@ -31,6 +31,7 @@ Quando houver vários prints, eles são partes do mesmo documento, em sequência
 
 Responda somente com um objeto JSON neste formato:
 {"banco": string, "tipo": "fatura"|"extrato", "fechamento": "AAAA-MM-DD"|null, "vencimento": "AAAA-MM-DD"|null, "total": number|null,
+ "saldo": {"valor": number, "data": "AAAA-MM-DD"}|null,
  "transacoes": [{"data":"AAAA-MM-DD","descricao":string,"valor":number,"tipo":"saida"|"entrada","categoria":"essencial"|"estilo"|"futuro"|"metas"|null,"parcela":"2/6"|null,"pagamento_fatura":boolean}]}
 
 Regras:
@@ -46,7 +47,10 @@ Regras:
   futuro = parcelas, empréstimos, financiamentos e acordos de dívida;
   metas = aplicações, investimentos, caixinhas, reserva de emergência.
 - "pagamento_fatura": true só para o pagamento da própria fatura anterior.
-- Não invente lançamentos. Ignore linhas de saldo, limite, juros informativos e propaganda.`;
+- Não invente lançamentos. Ignore linhas de limite, juros informativos e propaganda.
+- Linhas de saldo ("Saldo disponível", "Saldo anterior", "Saldo do dia", "Saldo total", "Saldo em conta") NUNCA são transações: não as coloque em "transacoes".
+- "saldo": o saldo disponível ou atual da conta mostrado no documento (o mais recente), com a data; use null em faturas de cartão ou se não aparecer.
+- Só débitos de verdade são "saida". Créditos, depósitos, Pix recebidos, estornos e rendimentos são "entrada".`;
 
 async function askGemini(model: string, key: string, files: Part[]) {
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });

@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v23 | 15/11/2026 | Revisão: sai o bloco de impacto e "Saídas no arquivo" (ou "Total da fatura") vira o destaque; linhas de saldo nunca entram como gasto e o saldo do arquivo pode virar o saldo de hoje; âncora do saldo: lançamentos de meses anteriores não mudam mais o "Quanto eu tenho hoje"; campo "Quanto você tem hoje" em Ajustes |
 | v22 | 15/11/2026 | Revisão da importação mostra o impacto no saldo do mês da fatura (antes e depois), em tempo real ao marcar e desmarcar, em vermelho se o mês ficar negativo |
 | v21 | 15/11/2026 | Cartão no Open Finance: compras entram na fatura certa e pendentes (não mais pagas); parcelas lidas do banco ou da descrição, com as próximas projetadas e conciliadas na sincronização seguinte; correção automática das compras já importadas |
 | v20 | 15/11/2026 | Hospedagem passa do Netlify para o GitHub Pages (publica a cada envio para a `main`, sem custo); página 404 que volta para o app |
