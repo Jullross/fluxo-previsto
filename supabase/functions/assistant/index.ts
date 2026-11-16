@@ -5,7 +5,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const OWNER_ID = (Deno.env.get("OWNER_ID") ?? "").trim();
 const ALLOWED = ["https://jullross.github.io", "http://localhost:8000", "http://127.0.0.1:8000"];
-const MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+// Primeiro o modelo leve (rápido, o mesmo que já lê os PDFs); se falhar, o mais capaz.
+const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
+const TIMEOUT_MS = 45_000; // cada tentativa; o Supabase corta a função em 150 s
 const MAX_CTX = 60_000;
 
 function cors(req: Request) {
@@ -45,20 +47,23 @@ Deno.serve(async (req) => {
 
   let last = "";
   for (const model of MODELS) {
+    const t0 = Date.now(), ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: "POST",
+        method: "POST", signal: ctl.signal,
         headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: msgs, generationConfig: { temperature: 0.2, maxOutputTokens: 900 } }),
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: msgs, generationConfig: { temperature: 0.2, maxOutputTokens: 4096 } }),
       });
       if (r.status === 429) return json(req, 429, { error: "rate_limited" });
-      if (!r.ok) { last = String(r.status); continue; }
+      if (!r.ok) { let d = ""; try { d = String((await r.json())?.error?.message ?? "").slice(0, 160); } catch { /* sem corpo */ } last = `${r.status} ${d}`; console.error("assistant", model, last, Date.now() - t0, "ms"); continue; }
       const out = await r.json();
-      const text = (out?.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("").trim();
+      const text = (out?.candidates?.[0]?.content?.parts ?? []).filter((p: { thought?: boolean }) => !p.thought).map((p: { text?: string }) => p.text ?? "").join("").trim();
+      console.log("assistant", model, text ? "ok" : "vazio", Date.now() - t0, "ms", out?.candidates?.[0]?.finishReason ?? "");
       if (text) return json(req, 200, { model, text });
       last = "vazio";
-    } catch (e) { last = String((e as Error).message ?? e); }
+    } catch (e) { last = ctl.signal.aborted ? "timeout" : String((e as Error).message ?? e); console.error("assistant", model, last, Date.now() - t0, "ms"); }
+    finally { clearTimeout(timer); }
   }
   console.error("assistant", last);
-  return json(req, 502, { error: "read_failed" });
+  return json(req, 502, { error: last === "timeout" ? "timeout" : "read_failed" });
 });

@@ -4478,11 +4478,12 @@ async function askAI(q){
   try {
     if (USER && USER.provider==='cloud' && sb){
       const {data, error} = await sb.functions.invoke('assistant', {body:payload});
-      if (error) throw error; text = data && data.text;
+      if (error){ let code=''; try { code=(await error.context.json()).error||''; } catch(_) {} if (!code && error.context && error.context.status) code=String(error.context.status); throw new Error(code||error.message); }
+      text = data && data.text;
       if (!text) throw new Error(data && data.error || 'vazio');
     } else text = await aiDemoAsk(payload);
   } catch(e){
-    const m=String(e && (e.message||e)); text = /rate|429/.test(m) ? 'Muitas perguntas seguidas. Espere um minutinho e tente de novo.' : /forbidden|403/.test(m) ? 'O assistente está disponível só na conta da dona do app.' : 'Não consegui responder agora. Tente de novo em instantes.';
+    const m=String(e && (e.message||e)); text = /timeout|546|502|504|read_failed/.test(m) ? (/read_failed/.test(m) ? 'A IA não conseguiu responder agora. Tente de novo em instantes.' : 'A IA demorou demais para responder. Tente de novo.') : /rate|429/.test(m) ? 'Muitas perguntas seguidas. Espere um minutinho e tente de novo.' : /forbidden|403/.test(m) ? 'O assistente está disponível só na conta da dona do app.' : /not_configured|409/.test(m) ? 'Falta a chave do Gemini no Supabase.' : 'Não consegui responder agora. Tente de novo em instantes.';
   }
   AI.msgs.push({role:'assistant', content:text}); AI.busy=false; renderAI();
 }
