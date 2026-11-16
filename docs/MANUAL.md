@@ -72,6 +72,7 @@ Abas de Lançamentos, Calendário, Dívidas e Desafio no topo. Abaixo, o painel 
 - **Ver as faturas:** Lançamentos → Faturas de Cartão mostra cada fatura com saldo anterior em aberto, compras à vista, parcelas, assinaturas e total.
 - **Dar baixa / Pagar fatura:** valor total, parcial ou "não paguei". O que faltar vai para a fatura do mês seguinte como saldo anterior em aberto, com os juros do rotativo se você informar a taxa.
 - **Pagar a fatura é uma saída só:** as compras de dentro dela não somam de novo.
+- **Corrigir ou excluir uma compra da fatura:** em Faturas de Cartão, toque em "Ver os lançamentos desta fatura". O **×** exclui (no parcelado, a compra inteira; no recorrente, só daquele mês em diante ou de todos) e tocar no nome abre a edição.
 - **"Comprei hoje":** ao lançar uma compra no cartão, esse botão coloca a compra na fatura certa.
 
 ## 7. Importar extrato, fatura ou prints
@@ -89,7 +90,11 @@ Abas de Lançamentos, Calendário, Dívidas e Desafio no topo. Abaixo, o painel 
 
 Mais → Open Finance (só para a dona do app) sincroniza as contas e os cartões conectados no Meu Pluggy. A revisão é a mesma da importação: as compras de cartão vão para a fatura certa, entram pendentes e as parcelas são projetadas e conciliadas nos meses seguintes.
 
-## 9. Quando algo não bate
+## 9. Assistente
+
+O ícone ✦ no topo (no celular, também em Mais → Assistente) abre um chat. Pergunte em texto livre ("em quantas vezes parcelo R$ 1.900?", "em que mês fico mais apertada?") e ele responde com as contas feitas com os números do app: saldo de hoje, próximos meses, faturas, fixos e parcelados. Ele só sabe o que está lançado; gastos que variam e não foram lançados entram como estimativa. Funciona só na conta da dona do app e usa a mesma chave do Gemini da leitura de PDF.
+
+## 10. Quando algo não bate
 
 | Situação | O que fazer |
 | --- | --- |
@@ -99,7 +104,7 @@ Mais → Open Finance (só para a dona do app) sincroniza as contas e os cartõe
 | O app não mostra uma função nova | Feche e abra o app. Confira se está no endereço jullross.github.io/fluxo-previsto, não num ícone antigo |
 | Leitura de PDF ou print falhou | Tente de novo em alguns minutos (limite gratuito da IA) ou use o CSV/OFX do banco |
 
-## 10. Dicas
+## 11. Dicas
 
 - O ícone de olho esconde todos os valores.
 - O sino lista faturas fechadas e extratos atrasados.

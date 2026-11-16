@@ -906,6 +906,40 @@ body:not(.locked) #auth{display:none!important}
   .sim-live > div.full .num{font-size:15px}
   .sim-live > div.full .num b{font-size:22px}
 }
+
+/* ===== v31: lançamentos dentro da fatura e assistente ===== */
+.fat-its{border-top:1px dashed var(--line);padding-top:8px}
+.fat-its summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);list-style:none;padding:4px 0}
+.fat-its summary::-webkit-details-marker{display:none}
+.fat-its-list{display:flex;flex-direction:column;margin-top:4px}
+.fat-it{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:4px 10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.fat-it:first-child{border-top:0}
+.fat-it .fi-b{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0;text-align:left;border:0;background:none;color:var(--fg);padding:0;cursor:pointer}
+.fat-it .fi-n{font-size:13.5px;font-weight:500;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fat-it .fi-t{font-size:11.5px;color:var(--faint)}
+.fat-it .fi-v{font-size:13.5px;white-space:nowrap}
+.fat-it .fi-del{border:0;background:none;color:var(--faint);padding:6px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:600;min-width:32px;min-height:32px}
+.fat-it .fi-del:hover{color:var(--stop-text);background:color-mix(in srgb,var(--stop) 10%,transparent)}
+.fat-it.armed .fi-del{color:var(--stop-text)}
+.fat-it .fi-conf{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 2px}
+.ai-btn{color:var(--accent)!important}
+#m-ai .sheet{display:flex;flex-direction:column;gap:12px;height:min(88vh,760px);max-width:620px}
+.ai-log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:2px;overscroll-behavior:contain}
+.ai-msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.ai-msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:6px}
+.ai-msg.bot{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:6px}
+.ai-msg.bot p{margin:0 0 6px} .ai-msg.bot p:last-child{margin:0}
+.ai-msg.bot ul{margin:4px 0 6px;padding-left:18px} .ai-msg.bot li{margin:2px 0}
+.ai-msg.bot b{font-weight:700}
+.ai-msg.wait{color:var(--muted)}
+.ai-msg.wait i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:4px;animation:aiDot 1s infinite alternate}
+.ai-msg.wait i:nth-child(2){animation-delay:.2s} .ai-msg.wait i:nth-child(3){animation-delay:.4s}
+@keyframes aiDot{from{opacity:.25}to{opacity:1}}
+.ai-sug{display:flex;flex-wrap:wrap;gap:6px}
+.ai-sug button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:7px 12px;font-size:13px;text-align:left}
+.ai-form{display:flex;gap:8px;align-items:flex-end}
+.ai-form textarea{flex:1;min-width:0;resize:none;max-height:120px}
+.ai-note{font-size:11.5px;color:var(--faint)}
 /* ===== Impressão / salvar como PDF pelo navegador ===== */
 @media print{
   :root{--bg:#fff;--surface:#fff;--surface-2:#f2f3f6;--line:#d9dde6;--fg:#141922;--muted:#566074;--faint:#949cad;--accent:#0d9488;--accent-ink:#fff;--cal-bal:#0369a1;--go-text:#047857;--stop-text:#dc2626;--care-text:#b45309;color-scheme:light}
@@ -978,6 +1012,9 @@ body:not(.locked) #auth{display:none!important}
     <div class="flex items-center gap-2 top-actions">
       <button type="button" class="btn icon-btn" id="btn-privacy" aria-pressed="false" aria-label="Esconder valores" title="Esconder valores"></button>
       <button type="button" class="btn icon-btn" id="btn-theme" aria-label="Alternar tema" title="Alternar tema claro/escuro"></button>
+      <button type="button" class="btn icon-btn ai-btn" id="btn-ai" aria-label="Assistente" title="Assistente: pergunte sobre o seu dinheiro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      </button>
       <button type="button" class="btn icon-btn" id="btn-bell" aria-label="Alertas de extratos e faturas" title="Alertas de extratos e faturas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         <span class="badge" id="bell-badge" hidden></span>
@@ -1089,6 +1126,7 @@ body:not(.locked) #auth{display:none!important}
     <div class="label">Ferramentas</div>
     <div class="more-grid">
       <button type="button" data-more="of" data-of hidden><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg></span>Open Finance</button>
+      <button type="button" data-more="ai"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>Assistente</button>
       <button type="button" data-more="check"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Conferir saldo</button>
       <button type="button" data-more="banks"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10M19 21V10M9.5 21V10M14.5 21V10M12 3 3 8h18z"/></svg></span>Bancos e cartões</button>
       <button type="button" data-more="import"><span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg></span>Sincronizar extrato</button>
@@ -1478,6 +1516,21 @@ body:not(.locked) #auth{display:none!important}
       <button type="button" class="btn btn-ghost" data-close aria-label="Fechar"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div id="alerts-body" class="flex flex-col gap-3"></div>
+  </div>
+</div>
+
+<!-- Modal: assistente -->
+<div class="overlay" id="m-ai" hidden>
+  <div class="sheet">
+    <div class="flex items-center justify-between gap-2">
+      <div><h3 class="disp text-xl font-bold">Assistente</h3><div class="sub">Responde com os números do seu app</div></div>
+      <div class="flex items-center gap-1"><button type="button" class="btn btn-sm btn-ghost" id="ai-clear">Nova conversa</button>
+      <button type="button" class="btn btn-ghost" data-close aria-label="Fechar"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    </div>
+    <div class="ai-log" id="ai-log" aria-live="polite"></div>
+    <div class="ai-sug" id="ai-sug"></div>
+    <form class="ai-form" id="ai-form"><textarea class="inp" id="ai-q" rows="1" placeholder="Ex.: em quantas vezes faço R$ 1.900?" aria-label="Sua pergunta"></textarea><button type="submit" class="btn btn-primary" id="ai-send">Enviar</button></form>
+    <div class="ai-note">O assistente faz contas com o que está lançado no app. Não é consultoria financeira: a decisão é sua.</div>
   </div>
 </div>
 
@@ -2647,6 +2700,7 @@ function xferItemHTML(o){
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5"><span class="tag xfer">${o.e.type==='recurring'?'Transferência fixa':'Transferência'}</span>${past?'<span class="tag pend">agendada</span>':''}<span class="sub">dia ${o.day} · ${esc(f?f.name:'?')} → ${esc(t?t.name:'?')} · não conta como entrada nem saída</span></div></button>
     <div class="amt num" style="color:var(--cal-bal)">⇄ ${fmt(o.amount)}</div></div>`;
 }
+const FAT_ITS_OPEN=new Set(); let FAT_DEL=null;
 function fatCardHTML(F){
   const c=F.c, st=FAT_STATE[F.state], k=c.id+'|'+F.m, nextM=addM(F.m,1);
   const L=(a,b,cls)=>`<div class="ln ${cls||''}"><span>${a}</span><span>${b}</span></div>`;
@@ -2663,6 +2717,12 @@ function fatCardHTML(F){
       ${F.recd||F.state==='paid'?L('Pago', '−'+fmt(F.paid), 'c-in'):''}
       ${F.next>0?L(`Vai para ${mLabel(nextM)}${F.recd&&F.recd.juros?` (com ${String(F.recd.juros).replace('.',',')}% de juros)`:''}`, fmt(F.next), 'c-warn'):''}
     </div>
+    ${F.items.length?`<details class="fat-its" ${FAT_ITS_OPEN.has(k)?'open':''} data-fat-its="${k}"><summary>${FAT_ITS_OPEN.has(k)?'Esconder':'Ver'} os ${F.items.length} ${F.items.length===1?'lançamento':'lançamentos'} desta fatura</summary>
+      <div class="fat-its-list">${F.items.slice().sort((a,b)=>b.amount-a.amount).map(o=>{ const t=o.e.type==='installment'?o.tag:o.e.type==='recurring'?'recorrente':'à vista', armed=FAT_DEL===o.e.id+'|'+o.m;
+        return `<div class="fat-it ${armed?'armed':''}"><button type="button" class="fi-b" data-edit="${o.e.id}" data-m="${o.m}" aria-label="Editar ${esc(o.e.name)}"><span class="fi-n">${esc(o.e.name)}</span><span class="fi-t">${esc(t)}${o.third?' · '+esc(o.e.whoName||'outra pessoa'):''}</span></button>
+          <span class="num fi-v">${fmt(o.amount)}</span>
+          <button type="button" class="fi-del" data-fat-del="${o.e.id}|${o.m}" aria-label="Excluir ${esc(o.e.name)}">${armed?'Excluir?':ic('x',15)}</button>
+          ${armed?`<div class="fi-conf">${o.e.type==='recurring'&&o.m>o.e.start?`<button type="button" class="btn btn-sm btn-danger" data-fat-delgo="end|${o.e.id}|${o.m}">Parar a partir de ${mLabel(o.m)}</button>`:''}<button type="button" class="btn btn-sm btn-danger" data-fat-delgo="del|${o.e.id}|${o.m}">${o.e.type==='installment'?'Excluir a compra inteira':o.e.type==='recurring'?'Excluir de todos os meses':'Excluir'}</button><button type="button" class="btn btn-sm" data-fat-delgo="no||">Cancelar</button></div>`:''}</div>`; }).join('')}</div></details>`:''}
     <div class="flex flex-wrap gap-2">
       ${F.total>0.004 && F.state!=='paid' && !F.recd?`<button type="button" class="btn btn-primary" data-fat-pay="${k}">Dar baixa / Pagar fatura</button>`:''}
       ${F.total>0.004 && F.state==='paid' && !F.recd?`<button type="button" class="btn" data-fat-pay="${k}">Pagou só uma parte?</button>`:''}
@@ -2723,6 +2783,12 @@ function bindItems(){
   $$('[data-fat-toggle]').forEach(h=>{ const go=()=>{ const k=h.dataset.fatToggle; if (FAT_OPEN.has(k)) FAT_OPEN.delete(k); else FAT_OPEN.add(k); render(); }; h.onclick=go; h.onkeydown=ev=>{ if (ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); go(); } }; });
   $$('[data-fat-go],[data-lf-go]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); LF='fat'; pref('lf',LF); render(); });
   $$('[data-fat-pay]').forEach(b=>b.onclick=()=>openFatPay(b.dataset.fatPay));
+  $$('[data-fat-its]').forEach(d=>d.addEventListener('toggle',()=>{ const k=d.dataset.fatIts; if (d.open) FAT_ITS_OPEN.add(k); else FAT_ITS_OPEN.delete(k); const s=d.querySelector('summary'); if (s) s.textContent=s.textContent.replace(/^(Ver|Esconder)/, d.open?'Esconder':'Ver'); }));
+  $$('[data-fat-del]').forEach(b=>b.onclick=()=>{ FAT_DEL = FAT_DEL===b.dataset.fatDel ? null : b.dataset.fatDel; render(); });
+  $$('[data-fat-delgo]').forEach(b=>b.onclick=()=>{ const [a,id,m]=b.dataset.fatDelgo.split('|'); FAT_DEL=null;
+    if (a==='del'){ const e=S.entries.find(x=>x.id===id); removeEntry(id); commit(); toast((e?e.name:'Lançamento')+' excluído da fatura'); }
+    else if (a==='end'){ const x=S.entries.find(y=>y.id===id); if (x){ x.end=addM(m,-1); syncReimb(x); } commit(); toast('Não aparece mais a partir de '+mLabel(m)); }
+    else render(); });
   $$('[data-fat-undo]').forEach(b=>b.onclick=()=>{ const [id,m]=b.dataset.fatUndo.split('|'), c=accById(id); const had=!!(S.faturas||{})[id+'|'+m]; undoFatPayment(c,m); commit(); toast(had?'Baixa desfeita: a fatura de '+mLabel(m)+' voltou como estava':'Fatura de '+mLabel(m)+' marcada como não paga'); });
   $$('[data-toggle]').forEach(b=>b.onclick=()=>{ const k=b.dataset.toggle; justToggled=k; if (S.status[k]) delete S.status[k]; else S.status[k]=true; commit(); setTimeout(()=>{ justToggled=null; }, 600); });
   $$('[data-qe="amt"]').forEach(a=>{ const go=()=>{ if (!a.querySelector('input')) quickEdit(a,'amt',a.dataset.id,a.dataset.m); }; a.onclick=go; a.onkeydown=ev=>{ if (ev.key==='Enter'){ ev.preventDefault(); go(); } }; });
@@ -4349,11 +4415,82 @@ $$('[data-more]').forEach(b=>b.onclick=()=>{
   else if (k==='export') $('#btn-export').click();
   else if (k==='settings') openSettings();
   else if (k==='check') openCheck();
+  else if (k==='ai') openAI();
   else if (k==='account') openAccount();
   else if (k==='alerts') openAlerts();
   else if (k==='theme') $('#btn-theme').click();
   else if (k==='install') installApp();
 });
+
+
+/* ---------- Assistente: perguntas sobre o seu dinheiro, respondidas com os dados do app ---------- */
+const AI = { msgs:[], busy:false };
+const AI_SUG = ['Em quantas vezes eu parcelo R$ 1.900?','Quanto posso gastar por dia até o salário?','O que mais pesa nas minhas próximas faturas?','Em que mês meu dinheiro fica mais apertado?'];
+// Resumo dos dados que vai junto com a pergunta (sem e-mail, sem chaves, só números e nomes de lançamentos)
+function aiContext(){
+  const Pp=project(), h=health(Pp), cp=h?h.cp:null, r0=Pp.find(x=>x.m===CUR);
+  const months = Pp.filter(r=>r.m>=CUR).slice(0,8).map(r=>{ let lo=Infinity, at=1; for (let d=(r.m===CUR?TODAY:1); d<r.days.length; d++) if (r.days[d]<lo){ lo=r.days[d]; at=d; }
+    return {mes:r.m, comeca:r.start, entra:r.inTotal, sai:r.outTotal, termina:r.end, dia_mais_baixo:at, saldo_mais_baixo:r2(lo)}; });
+  const cards = S.accounts.filter(a=>a.kind==='card').map(c=>({cartao:c.name, fecha:c.closeDay||null, vence:c.dueDay||null, titular:c.holder==='third'?(c.holderName||'outra pessoa'):'você',
+    faturas: Pp.filter(r=>r.m>=CUR).slice(0,8).map(r=>{ const F=fatInfo(r,c); return F.total>0.004 ? {mes:r.m, total:F.total, situacao:FAT_STATE[F.state][0], itens:F.items.map(o=>`${o.e.name} ${fmt(o.amount)} (${o.e.type==='installment'?o.tag:o.e.type==='recurring'?'recorrente':'à vista'}${o.third?', de '+(o.e.whoName||'outra pessoa'):''})`)} : null; }).filter(Boolean)}));
+  const fixos = S.entries.filter(e=>e.type==='recurring' && (!e.end || e.end>=CUR) && !e.virtual).map(e=>({nome:e.name, tipo:e.kind==='in'?'entrada':'saída', valor:amountAt(e, CUR>=e.start?CUR:e.start), dia:e.day, regra:e.dayRule||'fixed', conta:(accById(e.accountId)||{}).name||null, desde:e.start}));
+  const parcelados = S.entries.filter(e=>e.type==='installment').map(e=>({nome:e.name, total:e.total, parcelas:e.n, de:e.start, ate:addM(e.start,e.n-1), conta:(accById(e.accountId)||{}).name||null}));
+  const gastosMes = r0 ? r0.outs.filter(o=>o.done && o.e.type==='single' && !o.third && !isCardAcc(o.e.accountId)).map(o=>`dia ${o.day}: ${o.e.name} ${fmt(o.amount)}${o.cat?' ['+o.cat+']':''}`) : [];
+  return {
+    hoje: TODAY_ISO, saldo_hoje: cp?cp.now:null, ainda_entra_no_mes: cp?cp.pendIn:null, ainda_sai_no_mes: cp?cp.pendOut:null,
+    pode_gastar_por_dia: h?r2(h.teto):null, menor_saldo_proximos_12_meses: h?{valor:h.min, em:h.at}:null,
+    contas: S.accounts.filter(a=>a.kind!=='card').map(a=>({conta:a.name, saldo_no_banco:a.bank?a.bank.v:null, em:a.bank?a.bank.at:null})),
+    meses: months, cartoes: cards, fixos, parcelados, gastos_avulsos_ja_feitos_este_mes: gastosMes,
+    observacao: 'A projeção só inclui o que está lançado. Gastos que variam (transporte, mercado, Pix avulsos) só entram se estiverem lançados; use os gastos avulsos deste mês para estimar o ritmo.'
+  };
+}
+const AI_SYSTEM = `Você é o assistente do Fluxo Previsto, um app de previsibilidade financeira pessoal. Responda em português do Brasil, de forma direta e curta (até ~180 palavras), como uma amiga que entende de finanças.
+Use SÓ os números do JSON "dados" (valores em reais). Faça as contas de verdade, mês a mês, e mostre os números que sustentam a resposta. Quando a pergunta for sobre parcelar, compare as opções (ex.: 3x, 5x, 6x, 10x) contra a sobra e o saldo mais baixo de cada mês e diga qual cabe com folga.
+Lembre que a projeção não inclui gastos variáveis que não foram lançados: estime o ritmo pelos gastos avulsos do mês e avise quando isso mudar a conclusão. Vale-refeição (VR/Swile) não paga contas que não sejam comida.
+Não invente dados. Se faltar informação, diga o que falta. Você não é consultora financeira: no fim de recomendações de compra ou dívida, lembre em meia frase que a decisão é da pessoa.
+Formato: parágrafos curtos, listas com "- " e negrito com **texto**. Sem títulos e sem tabelas.`;
+function aiFmt(t){
+  const lines=esc(String(t||'')).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').split(/\n/);
+  let h='', inList=false;
+  for (const l of lines){ const m=l.match(/^\s*[-•*]\s+(.*)/); if (m){ if(!inList){h+='<ul>';inList=true;} h+=`<li>${m[1]}</li>`; continue; } if (inList){h+='</ul>';inList=false;} if (l.trim()) h+=`<p>${l}</p>`; }
+  return h+(inList?'</ul>':'');
+}
+function renderAI(){
+  const log=$('#ai-log');
+  log.innerHTML = (AI.msgs.length ? '' : `<div class="ai-msg bot"><p>Oi! Pergunte qualquer coisa sobre o seu dinheiro: se uma compra cabe, em quantas vezes parcelar, por que o saldo caiu, quanto dá para gastar até o salário.</p></div>`)
+    + AI.msgs.map(m=>`<div class="ai-msg ${m.role==='user'?'me':'bot'}">${m.role==='user'?esc(m.content):aiFmt(m.content)}</div>`).join('')
+    + (AI.busy?'<div class="ai-msg bot wait"><i></i><i></i><i></i> pensando…</div>':'');
+  $('#ai-sug').innerHTML = AI.msgs.length ? '' : AI_SUG.map(q=>`<button type="button" data-ai-q="${esc(q)}">${esc(q)}</button>`).join('');
+  $$('#ai-sug [data-ai-q]').forEach(b=>b.onclick=()=>askAI(b.dataset.aiQ));
+  $('#ai-send').disabled=AI.busy; log.scrollTop=log.scrollHeight;
+}
+function openAI(){ close(); setTimeout(()=>{ $('#m-ai').hidden=false; renderAI(); if (!isMobile()) $('#ai-q').focus(); }, 60); }
+// Na demonstração (prévia) a pergunta vai para a página de fora; no app, para a função "assistant" do Supabase.
+function aiDemoAsk(payload){ return new Promise((res,rej)=>{ if (window.parent===window) return rej(new Error('demo')); const id='q'+Date.now();
+  const on=ev=>{ const d=ev.data||{}; if (d.type==='fp-ai-answer' && d.id===id){ window.removeEventListener('message',on); clearTimeout(t); d.error?rej(new Error(d.error)):res(d.text); } };
+  const t=setTimeout(()=>{ window.removeEventListener('message',on); rej(new Error('timeout')); }, 90000);
+  window.addEventListener('message',on); window.parent.postMessage({type:'fp-ai-ask', id, ...payload}, '*'); }); }
+async function askAI(q){
+  q=String(q||'').trim(); if (!q || AI.busy) return;
+  AI.msgs.push({role:'user', content:q}); AI.busy=true; $('#ai-q').value=''; renderAI();
+  const payload={system:AI_SYSTEM, context:aiContext(), messages:AI.msgs.slice(-8)};
+  let text;
+  try {
+    if (USER && USER.provider==='cloud' && sb){
+      const {data, error} = await sb.functions.invoke('assistant', {body:payload});
+      if (error) throw error; text = data && data.text;
+      if (!text) throw new Error(data && data.error || 'vazio');
+    } else text = await aiDemoAsk(payload);
+  } catch(e){
+    const m=String(e && (e.message||e)); text = /rate|429/.test(m) ? 'Muitas perguntas seguidas. Espere um minutinho e tente de novo.' : /forbidden|403/.test(m) ? 'O assistente está disponível só na conta da dona do app.' : 'Não consegui responder agora. Tente de novo em instantes.';
+  }
+  AI.msgs.push({role:'assistant', content:text}); AI.busy=false; renderAI();
+}
+$('#btn-ai').onclick=openAI;
+$('#ai-form').addEventListener('submit', ev=>{ ev.preventDefault(); askAI($('#ai-q').value); });
+$('#ai-q').addEventListener('keydown', ev=>{ if (ev.key==='Enter' && !ev.shiftKey){ ev.preventDefault(); askAI($('#ai-q').value); } });
+$('#ai-q').addEventListener('input', ()=>{ const t=$('#ai-q'); t.style.height='auto'; t.style.height=Math.min(120,t.scrollHeight)+'px'; });
+$('#ai-clear').onclick=()=>{ if (AI.busy) return; AI.msgs=[]; renderAI(); };
 
 /* ---------- PWA: service worker e instalação ---------- */
 let deferredPrompt=null;

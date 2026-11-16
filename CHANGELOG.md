@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v31 | 16/11/2026 | Faturas de Cartão: "Ver os lançamentos desta fatura" com editar e excluir (parcelado: compra inteira; recorrente: parar a partir do mês ou excluir de todos); Assistente de IA (ícone ✦ e Mais → Assistente) que responde com os números do app, pela função `assistant` do Supabase com o Gemini |
 | v30 | 16/11/2026 | Celular: gesto de trocar de tela só com movimento bem horizontal (rolagem vertical não troca mais de aba); Início com o saldo de hoje em destaque e a sobra do mês embaixo, com cores; Gastei mostra também o saldo de hoje antes e depois; meses antes do mês de partida somem da faixa; lançamentos de histórico com título próprio; Conferir saldo, Ajustes, Calendário, Entradas/Saídas, Minha conta e o botão + Lançamento sem textos quebrados |
 | v29 | 15/11/2026 | Correção de sincronização: aparelho com cópia antiga não sobrescreve mais a nuvem (nada é gravado antes de sincronizar; a nuvem vence quando mudou em outro aparelho; o banco recusa versões mais antigas pelo número de revisão); backup automático das últimas 60 versões no Supabase |
 | v28 | 15/11/2026 | Simulador "No cartão": escolhe o cartão e 1x a 12x, a compra cai na fatura certa pelo fechamento, mostra cada fatura antes e depois, e avisa que o saldo de hoje não muda até o vencimento |
