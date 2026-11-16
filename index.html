@@ -1549,7 +1549,9 @@ function seed(){
 /* ---------- Estado ---------- */
 let S;
 let DATA_KEY = KEY+':none';
-function save(){ try { localStorage.setItem(DATA_KEY, JSON.stringify(S)); localStorage.setItem(DATA_KEY+':savedAt', new Date().toISOString()); } catch(e) {} Sync.schedule(); }
+// só grava depois de saber qual é a versão certa dos dados (a da nuvem, para quem tem conta)
+let DATA_READY = false;
+function save(){ if (S && S.settings) S.settings.rev=(+S.settings.rev||0)+1; try { localStorage.setItem(DATA_KEY, JSON.stringify(S)); localStorage.setItem(DATA_KEY+':savedAt', new Date().toISOString()); } catch(e) {} Sync.schedule(); }
 function valid(d){ return d && Array.isArray(d.entries) && d.settings && /^\d{4}-\d{2}$/.test(d.settings.baseMonth||'') && typeof d.status==='object'; }
 function migrate(d){
   d.version=3; d.settings.targets = {...DEFAULT_TARGETS, ...(d.settings.targets||{})};
@@ -1867,7 +1869,7 @@ function render(){
   if (!document.body.dataset.screen) document.body.dataset.screen=screen;
   P = project();
   // primeira vez na v23: fixa o saldo atual como âncora, para importações de meses passados não mudarem o saldo de hoje
-  if (!S.settings.anchor && (S.entries||[]).length && (()=>{ try { return !!USER; } catch(e){ return false; } })()){ const rc=P.find(x=>x.m===CUR); if (rc){ S.settings.anchor={m:CUR, start:rc.start}; save(); } }
+  if (DATA_READY && !S.settings.anchor && (S.entries||[]).length && (()=>{ try { return !!USER; } catch(e){ return false; } })()){ const rc=P.find(x=>x.m===CUR); if (rc){ S.settings.anchor={m:CUR, start:rc.start}; save(); } }
   if (!P.find(r=>r.m===sel)) sel = P.find(r=>r.m===CUR)? CUR : P[0].m;
   const r=P.find(x=>x.m===sel);
   renderPeople(); renderBanner(); renderAlerts(); renderStrip(); renderHero(r); renderThermo(); renderSim();
@@ -4061,14 +4063,20 @@ const Sync = {
     if (!USER || USER.provider!=='cloud') return;
     this.set('pending'); clearTimeout(this.timer); this.timer=setTimeout(()=>this.push(), 1200);
   },
+  keepLocalCopy(){ try { const raw=lsGet(DATA_KEY); if (raw) lsSet(DATA_KEY+':copia-local', JSON.stringify({at:new Date().toISOString(), data:JSON.parse(raw)})); } catch(e) {} },
   async push(){
     if (!USER || USER.provider!=='cloud') return;
+    if (!DATA_READY) return;
     if (!navigator.onLine){ this.set('offline'); return; }
     if (this.busy){ this.schedule(); return; }
     this.busy=true; this.set('syncing');
     const at = lsGet(DATA_KEY+':savedAt') || new Date().toISOString();
     try { await DatabaseService.push(USER, S, at); lsSet(DATA_KEY+':synced', at); this.set(this.dirty()?'pending':'ok'); if (this.dirty()) this.schedule(); }
-    catch(e){ this.set('offline'); }
+    catch(e){
+      // o banco recusou: a nuvem tem uma versão mais nova (outro aparelho). Carrega a da nuvem e guarda a deste aparelho.
+      if (/stale_write/.test(String(e && (e.message||e.details||e)))){ this.keepLocalCopy(); lsSet(DATA_KEY+':synced', '1970-01-01T00:00:00.000Z'); this.busy=false; await this.pull(); toast('Seus dados estavam mais novos em outro aparelho: carreguei a versão da nuvem.'); return; }
+      this.set('offline');
+    }
     finally { this.busy=false; }
   },
   async pull(){
@@ -4077,7 +4085,10 @@ const Sync = {
     try {
       const remote = await DatabaseService.pull(USER);
       const rAt = remote ? Date.parse(remote.updated_at) : 0;
-      if (remote && valid(remote.data) && (!this.dirty() || rAt > this.savedAt())){
+      // a nuvem mudou desde a última sincronização deste aparelho: a versão da nuvem vence (a cópia local fica guardada)
+      const remoteChanged = remote && rAt > this.syncedAt();
+      if (remote && valid(remote.data) && this.dirty() && remoteChanged){ this.keepLocalCopy(); }
+      if (remote && valid(remote.data) && (!this.dirty() || remoteChanged)){
         if (rAt !== this.syncedAt() || !lsGet(DATA_KEY)){
           S = migrate(remote.data);
           lsSet(DATA_KEY, JSON.stringify(S));
@@ -4161,14 +4172,14 @@ const Live = {
   stop(){ if (this.ch && sb){ try { sb.removeChannel(this.ch); } catch(e) {} } this.ch=null; },
 };
 async function startApp(user, fresh){
-  USER=user; DATA_KEY=DatabaseService.key(user);
+  USER=user; DATA_KEY=DatabaseService.key(user); DATA_READY = user.provider!=='cloud';
   const local = DatabaseService.loadLocal(user);
   S = local || (user.id==='demo' ? seed() : emptyState());
   if (!local) lsSet(DATA_KEY, JSON.stringify(S));
   sel=CUR; selDay=TODAY;
   document.body.classList.remove('locked'); authMsg('');
   renderAccount(); render(); window.scrollTo(0,0);
-  if (user.provider==='cloud'){ Sync.set('syncing'); await Sync.pull(); Live.start(user); OF.check(); PDFI.check(); } else Sync.set(user.provider==='demo'?'local':'local');
+  if (user.provider==='cloud'){ Sync.set('syncing'); await Sync.pull(); DATA_READY=true; render(); Live.start(user); OF.check(); PDFI.check(); } else Sync.set(user.provider==='demo'?'local':'local');
   if (fresh && user.provider!=='demo') setTimeout(()=>{ openSettings(); toast('Bem-vinda(o)! Comece pelo saldo de hoje e pelo mês de partida.'); }, 300);
 }
 async function logout(){

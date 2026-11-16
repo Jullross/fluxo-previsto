@@ -15,6 +15,7 @@ Cada pessoa só consegue ler e alterar a própria linha do banco, e nenhum segre
 | Transporte | HTTPS obrigatório (GitHub Pages e Supabase) |
 | Cabeçalhos | O GitHub Pages não aceita cabeçalhos próprios; a política de referência vai numa meta tag do `index.html` |
 | No aparelho | Cópia em `localStorage` para funcionar offline; Sair limpa a sessão |
+| Versões | Cada gravação leva um número de revisão (`settings.rev`); o banco recusa uma versão mais antiga que a da nuvem e guarda as 60 anteriores em `fluxo_backup` |
 | Na tela | Modo privacidade embaralha todos os valores em R$ |
 
 ## LGPD
