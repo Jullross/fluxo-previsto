@@ -42,13 +42,13 @@ Os dados ficam na sua conta (Supabase) e aparecem em qualquer aparelho em que vo
 
 | Tela | Para que serve |
 | --- | --- |
-| Início | Sobra no fim do mês, saldo de hoje, quanto dá para gastar por dia, o que já saiu e o que ainda vai sair, ritmo da semana e próximos vencimentos |
+| Início | Saldo de hoje em destaque, sobra no fim do mês, quanto dá para gastar por dia, o que já saiu e o que ainda vai sair, ritmo da semana e próximos vencimentos |
 | Lançamentos | Entradas, saídas e transferências do mês, com o filtro Todos, Conta/Pix/Débito ou Faturas de Cartão |
-| Gastei | "E se eu gastar hoje?": digite o valor, escolha À vista/Pix ou No cartão (qual cartão e em quantas vezes), veja o impacto no saldo, no termômetro e em cada fatura do cartão, e confirme |
+| Gastei | "E se eu gastar hoje?": digite o valor, escolha À vista/Pix ou No cartão (qual cartão e em quantas vezes), veja o impacto no saldo de hoje, no fim do mês, no termômetro e em cada fatura do cartão, e confirme |
 | Calendário | Saldo de cada dia; dois toques num dia lançam nele |
 | Mais | Dívidas, Desafio do mês, Bancos, Importar, Exportar, Ajustes e conta |
 
-Deslize para os lados para trocar de tela. A faixa de meses no topo troca o mês em todas.
+Deslize para os lados (um movimento bem horizontal) para trocar de tela; rolar para cima e para baixo nunca troca de tela. A faixa de meses no topo troca o mês em todas e começa no mês de partida.
 
 ### No computador
 
