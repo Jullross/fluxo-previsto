@@ -2813,7 +2813,11 @@ const MODES = {
   hard:{icon:'rocket', name:'Hardcore', sub:'O máximo sem o termômetro sair do verde'},
 };
 const floor10 = v => Math.max(0, Math.floor(v/10)*10);
-function vaultEntriesFor(m, deps){ return deps.map((d,i)=>({id:`chal_${m}_${i}`, kind:'out', type:'single', name:'Cofre do Desafio', start:m, day:d.day, amount:d.amount, cat:'metas', vault:true, method:'Caixinha'})); }
+// Aplicações e aportes de verdade (categoria Metas e aportes, saindo da conta) contam como depósito do desafio do mês:
+// o Cofre do Desafio diminui o quanto já foi aplicado, para o mesmo dinheiro não sair duas vezes.
+function aportesIn(m){ return occurrences(m, S.entries.filter(e=>e.kind==='out' && !e.vault && !e.virtual && !e.fat && !e.reimbursementFor && !isCardAcc(e.accountId) && (e.cat||inferCat(e))==='metas')); }
+function coverDeps(m, deps){ let left=r2(aportesIn(m).reduce((a,o)=>a+o.amount,0)); return deps.map(d=>{ const c=Math.max(0,Math.min(left,d.amount)); left=r2(left-c); return {...d, covered:r2(c), rest:r2(d.amount-c)}; }); }
+function vaultEntriesFor(m, deps){ return coverDeps(m,deps).map((d,i)=>({id:`chal_${m}_${i}`, kind:'out', type:'single', name:'Cofre do Desafio', start:m, day:d.day, amount:d.rest, cat:'metas', vault:true, method:'Caixinha'})).filter(e=>e.amount>0.004); }
 const vaultEntries = (exceptM) => Object.entries((S.challenge||{}).months||{}).filter(([m])=>m!==exceptM).flatMap(([m,c])=>vaultEntriesFor(m,c.deposits));
 // Dias de pagamento = dias em que caem os recebimentos fixos (salário, bolsa, parcelas a receber).
 // Estornos, Pix avulsos e lançamentos importados do extrato não contam. No máximo 3 dias, os de maior valor.
@@ -2864,9 +2868,10 @@ function acceptChallenge(m, mode){
 }
 function chalStatus(m){
   const c=S.challenge.months[m]; if (!c) return null;
-  const done=c.deposits.map((d,i)=>!!S.status[`chal_${m}_${i}|${m}`]);
-  const saved=c.deposits.reduce((s,d,i)=>s+(done[i]?d.amount:0),0);
-  return {...c, done, saved:r2(saved), beaten: done.length>0 && done.every(Boolean)};
+  const cov=coverDeps(m, c.deposits);
+  const done=cov.map((d,i)=>d.rest<=0.004 || !!S.status[`chal_${m}_${i}|${m}`]);
+  const saved=cov.reduce((s,d,i)=>s+(done[i]?d.amount:d.covered),0);
+  return {...c, cov, done, saved:r2(saved), beaten: done.length>0 && done.every(Boolean)};
 }
 function streak(){
   let m = chalStatus(CUR)?.beaten ? CUR : addM(CUR,-1), n=0;
@@ -2916,8 +2921,9 @@ function renderChallenge(){
   if (st){
     body = `<div class="flex flex-col gap-2">
       <div style="font-size:15px">Desafio de ${mFull(m).toLowerCase()} cravado: guardar <b class="num">${fmt(st.total)}</b> (${pctOf(st.total)} · ${ic(MODES[st.mode].icon,14)} ${MODES[st.mode].name}). Esse valor já saiu do seu saldo livre de gastos.</div>
+      ${(()=>{ const ap=aportesIn(m); return ap.length?`<div class="sub">Suas aplicações contam como depósito do desafio: ${ap.map(o=>`${esc(o.e.name)} <span class="num">${fmt(o.amount)}</span> (dia ${o.day})`).join(', ')}.</div>`:''; })()}
       ${st.deposits.map((d,i)=>`<div class="dep ${st.done[i]?'done':''}">
-        <span class="c-acc">${ic('gem',18)}</span><span class="flex-1">Trancar <b class="num">${fmt(d.amount)}</b> no dia ${pad(d.day)}${deps[i].names?` <span class="sub">(${esc(deps[i].names.join(' + '))})</span>`:''}</span>
+        <span class="c-acc">${ic('gem',18)}</span><span class="flex-1">Trancar <b class="num">${fmt(d.amount)}</b> no dia ${pad(d.day)}${deps[i].names?` <span class="sub">(${esc(deps[i].names.join(' + '))})</span>`:''}${st.cov[i].covered>0?`<br><span class="sub c-in">${st.cov[i].rest>0.004?`${fmt(st.cov[i].covered)} já aplicados · falta ${fmt(st.cov[i].rest)}`:'coberto pelas suas aplicações do mês'}</span>`:''}</span>
         <button class="btn btn-sm ${st.done[i]?'':'btn-primary'}" data-dep="${m}|${i}">${st.done[i]?ic('check',14)+' Guardado':'Guardado!'}</button></div>`).join('')}
       <div class="flex gap-2 flex-wrap"><button class="btn btn-sm btn-danger" id="chal-undo">${chalUndo===m?'Confirmar: desfazer desafio':'Desfazer desafio do mês'}</button></div>
     </div>`;
@@ -3539,14 +3545,22 @@ function buildRows(raw){
         if (!oa || oa.kind!=='checking' || oa.id===a.id || o.e.type!=='single' || o.e.kind===kind || Math.abs(o.amount-amount)>0.004 || Math.abs(o.day-day)>2) continue;
         xfer={entryId:o.e.id, other:oa.id, name:o.e.name}; break; }
     }
+    // já está lançado como transferência entre contas suas (saída da conta de origem ou entrada na de destino)?
+    let xknown=null;
+    if (!card && !dup && !payment && !fatPay){
+      for (const o of occurrences(m, S.entries.filter(e=>e.kind==='transfer'), true)){ const k=o.e.id+'|'+m+'|'+kind;
+        if (used.has(k) || Math.abs(o.amount-amount)>0.004 || Math.abs(o.day-day)>3) continue;
+        if ((kind==='out' && o.e.fromId===a.id) || (kind==='in' && o.e.toId===a.id)){ xknown={id:o.e.id, name:o.e.name, day:o.day}; used.add(k); break; } }
+      if (xknown){ match=null; xfer=null; }
+    }
     // já existe algo lançado (inclusive já pago) com data próxima e valor quase igual?
     let similar=null;
-    if (!match && !dup && !payment && !fatPay && !xfer){
+    if (!match && !dup && !payment && !fatPay && !xfer && !xknown){
       for (const o of occurrences(m, S.entries)){ const k=o.e.id+'|'+m;
         if (used.has(k) || o.e.kind!==kind || o.e.virtual || o.e.vault) continue;
         if (Math.abs(o.amount-amount) <= Math.max(0.5, amount*0.01) && Math.abs(o.day-day)<=3){ similar={key:k, name:o.e.name, day:o.day, amount:o.amount, done:o.done}; used.add(k); break; } }
     }
-    return {include:!dup && (!payment || !!fatPay) && !similar, parc, card, fatPay, xfer, xdec: xfer?'transfer':null, similar, decision: similar?'merge':null, accId:a.id, date:r.date, desc:r.desc||'(sem descrição)', amount, kind, cat:(r.cat && CATS[r.cat]) ? r.cat : (parc ? 'futuro' : guessCat(r.desc||'')), who:'me', m, day, done, match, dup, payment, importKey, pending:!!r.pending};
+    return {include:!dup && !xknown && (!payment || !!fatPay) && !similar, xknown, parc, card, fatPay, xfer, xdec: xfer?'transfer':null, similar, decision: similar?'merge':null, accId:a.id, date:r.date, desc:r.desc||'(sem descrição)', amount, kind, cat:(r.cat && CATS[r.cat]) ? r.cat : (parc ? 'futuro' : guessCat(r.desc||'')), who:'me', m, day, done, match, dup, payment, importKey, pending:!!r.pending};
   }).sort((x,y)=>x.date<y.date?-1:1);
   // várias parcelas da mesma compra no mesmo arquivo: só a primeira cria a compra parcelada; as outras já ficam projetadas por ela
   { const groups={};
@@ -3554,8 +3568,8 @@ function buildRows(raw){
     for (const ids of Object.values(groups)){ ids.sort((i,j)=>IM.rows[i].parc.k-IM.rows[j].parc.k); const first=IM.rows[ids[0]];
       for (const j of ids.slice(1)){ const y=IM.rows[j]; if (y.parc.k===first.parc.k) continue; y.parcCovered=ids[0]; y.include=false; } } }
   // pares dentro do próprio arquivo (Open Finance com várias contas): saída numa conta e entrada noutra, mesmo valor e data
-  for (let i=0;i<IM.rows.length;i++){ const x=IM.rows[i]; if (x.match||x.fatPay||x.xfer||x.dup||x.xpartner!=null||isCardAcc(x.accId)) continue;
-    for (let j=i+1;j<IM.rows.length;j++){ const y=IM.rows[j]; if (y.match||y.fatPay||y.xfer||y.dup||y.xpartner!=null||isCardAcc(y.accId)) continue;
+  for (let i=0;i<IM.rows.length;i++){ const x=IM.rows[i]; if (x.match||x.fatPay||x.xfer||x.dup||x.xknown||x.xpartner!=null||isCardAcc(x.accId)) continue;
+    for (let j=i+1;j<IM.rows.length;j++){ const y=IM.rows[j]; if (y.match||y.fatPay||y.xfer||y.dup||y.xknown||y.xpartner!=null||isCardAcc(y.accId)) continue;
       if (y.accId!==x.accId && y.kind!==x.kind && Math.abs(y.amount-x.amount)<0.005 && y.date===x.date){ x.xpartner=j; y.xpartner=i; x.xdec=y.xdec='transfer'; y.include=false; x.include=true; break; } } }
   renderPreview();
 }
@@ -3564,8 +3578,8 @@ function importStats(){
   const fat = r => r.fatPay || (r.xdec==='transfer' && (r.xfer || r.xpartner!=null));
   const selOut=IM.rows.filter(r=>(r.include||(r.similar&&r.decision==='merge'))&&r.kind==='out'&&!fat(r));
   const byCat={}; for (const k in CATS) byCat[k]=selOut.filter(r=>!r.match&&r.cat===k).reduce((a,r)=>a+r.amount,0);
-  const nmerge=IM.rows.filter(r=>r.similar&&r.decision==='merge').length;
-  return {selSum:selOut.reduce((a,r)=>a+r.amount,0), byCat, nmerge, n:IM.rows.filter(r=>r.include).length+nmerge, nm:IM.rows.filter(r=>r.include&&r.match).length+nmerge};
+  const nmerge=IM.rows.filter(r=>r.similar&&r.decision==='merge').length, nxk=IM.rows.filter(r=>r.xknown&&!r.include).length;
+  return {selSum:selOut.reduce((a,r)=>a+r.amount,0), byCat, nmerge, n:IM.rows.filter(r=>r.include).length+nmerge+nxk, nm:IM.rows.filter(r=>r.include&&r.match).length+nmerge+nxk};
 }
 function updateImpactUI(flash){
   const box=$('#i-preview'); if (!box || !$('#ik-after')) return;
@@ -3581,7 +3595,7 @@ function renderPreview(){
   const multi=new Set(IM.rows.map(r=>r.accId)).size>1, isCard=r=>{ const x=accById(r.accId); return x&&x.kind==='card'; };
   const card=IM.rows.some(isCard), ppl=knownPeople(), box=$('#i-preview');
   if (!IM.rows.length){ box.innerHTML='<div class="hint">Nenhuma transação nova no período.</div>'; return; }
-  const nmerge=IM.rows.filter(r=>r.similar&&r.decision==='merge').length, n=IM.rows.filter(r=>r.include).length+nmerge, nm=IM.rows.filter(r=>r.include&&r.match).length+nmerge;
+  const nmerge=IM.rows.filter(r=>r.similar&&r.decision==='merge').length, nxk=IM.rows.filter(r=>r.xknown&&!r.include).length, n=IM.rows.filter(r=>r.include).length+nmerge+nxk, nm=IM.rows.filter(r=>r.include&&r.match).length+nmerge+nxk;
   setIStep(3);
   const acc0=accById(IM.accId), meta=IM.meta||{}, dd=x=>x?String(x).slice(8,10)+'/'+String(x).slice(5,7):null;
   const selOut=IM.rows.filter(r=>(r.include||(r.similar&&r.decision==='merge'))&&r.kind==='out'&&!r.fatPay&&!(r.xdec==='transfer'&&(r.xfer||r.xpartner!=null))), selSum=selOut.reduce((a,r)=>a+r.amount,0);
@@ -3624,7 +3638,7 @@ function renderPreview(){
         : r.parcCovered!=null?`<span class="chip" title="A compra parcelada criada pela parcela ${IM.rows[r.parcCovered].parc.k}/${r.parc.n} já projeta esta">parcela ${r.parc.k}/${r.parc.n} · já projetada</span>`
         : (r.match&&r.match.parc)?`<span class="chip ok">concilia a parcela prevista “${esc(r.match.name)}”</span>`
         : (r.parc&&!r.match&&!r.dup)?`<span class="chip" style="color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))">parcelada ${r.parc.k}/${r.parc.n} · projeta até ${mLabel(addM(r.m, r.parc.n-r.parc.k))}</span>`
-        : r.similar?`<div class="flex flex-col gap-1"><span class="chip low" title="Mesmo valor (ou quase) e data próxima">parece já lançado: “${esc(r.similar.name)}” · dia ${r.similar.day}</span><select class="inp" data-rd="${i}" style="padding:4px 6px"><option value="merge" ${r.decision==='merge'?'selected':''}>Mesclar com o existente</option><option value="import" ${r.decision==='import'?'selected':''}>Importar mesmo assim</option></select></div>`:r.dup?'<span class="chip low">já importado</span>':r.payment?'<span class="chip low">pagamento da fatura</span>':r.match?`<span class="chip ok" title="Marca o previsto como ${r.kind==='in'?'recebido':'pago'}">concilia “${esc(r.match.name)}”</span>`:`<span class="chip">novo · ${r.done?(r.kind==='in'?'recebido':'pago'):'previsto'}</span>`}</td>
+        : r.similar?`<div class="flex flex-col gap-1"><span class="chip low" title="Mesmo valor (ou quase) e data próxima">parece já lançado: “${esc(r.similar.name)}” · dia ${r.similar.day}</span><select class="inp" data-rd="${i}" style="padding:4px 6px"><option value="merge" ${r.decision==='merge'?'selected':''}>Mesclar com o existente</option><option value="import" ${r.decision==='import'?'selected':''}>Importar mesmo assim</option></select></div>`:r.xknown?`<span class="chip low" title="Já está lançado como transferência entre suas contas">já é a transferência “${esc(r.xknown.name)}” · dia ${r.xknown.day}</span>`:r.dup?'<span class="chip low">já importado</span>':r.payment?'<span class="chip low">pagamento da fatura</span>':r.match?`<span class="chip ok" title="Marca o previsto como ${r.kind==='in'?'recebido':'pago'}">concilia “${esc(r.match.name)}”</span>`:`<span class="chip">novo · ${r.done?(r.kind==='in'?'recebido':'pago'):'previsto'}</span>`}</td>
     </tr>`).join('')}</tbody></table></div>
     <div class="flex flex-wrap items-center justify-between gap-2">
       <span class="sub" id="i-sum">${n} selecionados · ${nm} conciliam com o que já estava lançado (sem duplicar)${nmerge?` · ${nmerge} ${nmerge===1?'parece repetido e será mesclado':'parecem repetidos e serão mesclados'}`:''}</span>
@@ -3643,6 +3657,7 @@ function renderPreview(){
 function doImport(){
   let created=0, matched=0, fats=0, xfers=0;
   // linhas marcadas como "Mesclar com o existente": não viram lançamento novo; o existente passa a contar como pago
+  for (const r of IM.rows.filter(x=>x.xknown && !x.include)){ if (r.done) S.status[r.xknown.id+'|'+r.m]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; }
   for (const r of IM.rows.filter(x=>x.similar && x.decision==='merge')){ if (r.done) S.status[r.similar.key]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; } const touched=new Set(IM.rows.map(r=>r.accId));
   for (const r of IM.rows.filter(x=>x.include)){
     const a=accById(r.accId||IM.accId);

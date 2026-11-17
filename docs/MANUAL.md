@@ -108,5 +108,5 @@ O ícone ✦ no topo (no celular, também em Mais → Assistente) abre um chat. 
 
 - O ícone de olho esconde todos os valores.
 - O sino lista faturas fechadas e extratos atrasados.
-- O Desafio do mês só tira dinheiro do saldo depois que você aceita a meta.
+- O Desafio do mês só tira dinheiro do saldo depois que você aceita a meta. Aplicações e aportes lançados no mês (como "Aplicação RDB") contam como depósito do desafio: o Cofre do Desafio diminui na mesma medida.
 - Exportar gera relatório em CSV ou PDF do mês ou dos próximos 12 meses.
