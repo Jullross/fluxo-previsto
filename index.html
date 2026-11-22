@@ -1658,7 +1658,11 @@ let S;
 let DATA_KEY = KEY+':none';
 // só grava depois de saber qual é a versão certa dos dados (a da nuvem, para quem tem conta)
 let DATA_READY = false;
-function save(){ if (S && S.settings) S.settings.rev=(+S.settings.rev||0)+1; try { localStorage.setItem(DATA_KEY, JSON.stringify(S)); localStorage.setItem(DATA_KEY+':savedAt', new Date().toISOString()); } catch(e) {} Sync.schedule(); }
+// REV_HI: maior número de versão já visto nesta sessão. Ao limpar os dados (estado novo, sem número), a próxima gravação
+// continua acima da versão da nuvem; sem isso o banco recusava a limpeza como "versão antiga" e devolvia tudo.
+let REV_HI=0;
+function seenRev(){ if (S && S.settings) REV_HI=Math.max(REV_HI, +S.settings.rev||0); }
+function save(){ if (S && S.settings){ const r=Math.max(+S.settings.rev||0, REV_HI)+1; S.settings.rev=r; REV_HI=r; } try { localStorage.setItem(DATA_KEY, JSON.stringify(S)); localStorage.setItem(DATA_KEY+':savedAt', new Date().toISOString()); } catch(e) {} Sync.schedule(); }
 function valid(d){ return d && Array.isArray(d.entries) && d.settings && /^\d{4}-\d{2}$/.test(d.settings.baseMonth||'') && typeof d.status==='object'; }
 function migrate(d){
   d.version=3; d.settings.targets = {...DEFAULT_TARGETS, ...(d.settings.targets||{})};
@@ -4233,13 +4237,14 @@ const Sync = {
     this.set('syncing');
     try {
       const remote = await DatabaseService.pull(USER);
+      if (remote && remote.data && remote.data.settings) REV_HI=Math.max(REV_HI, +remote.data.settings.rev||0);
       const rAt = remote ? Date.parse(remote.updated_at) : 0;
       // a nuvem mudou desde a última sincronização deste aparelho: a versão da nuvem vence (a cópia local fica guardada)
       const remoteChanged = remote && rAt > this.syncedAt();
       if (remote && valid(remote.data) && this.dirty() && remoteChanged){ this.keepLocalCopy(); }
       if (remote && valid(remote.data) && (!this.dirty() || remoteChanged)){
         if (rAt !== this.syncedAt() || !lsGet(DATA_KEY)){
-          S = migrate(remote.data);
+          S = migrate(remote.data); seenRev();
           lsSet(DATA_KEY, JSON.stringify(S));
           const iso = new Date(rAt).toISOString(); lsSet(DATA_KEY+':savedAt', iso); lsSet(DATA_KEY+':synced', iso);
           render();
@@ -4323,7 +4328,7 @@ const Live = {
 async function startApp(user, fresh){
   USER=user; DATA_KEY=DatabaseService.key(user); DATA_READY = user.provider!=='cloud';
   const local = DatabaseService.loadLocal(user);
-  S = local || (user.id==='demo' ? seed() : emptyState());
+  REV_HI=0; S = local || (user.id==='demo' ? seed() : emptyState()); seenRev();
   if (!local) lsSet(DATA_KEY, JSON.stringify(S));
   sel=CUR; selDay=TODAY;
   document.body.classList.remove('locked'); authMsg('');
