@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v39 | 22/11/2026 | Fatura mostra sempre o total cobrado pelo banco, incluindo compras de outras pessoas, com a linha "Inclui (pessoa) (reembolso previsto)"; compra parcelada importada com parcelas daqui para frente não vira histórico |
 | v38 | 22/11/2026 | Fatura em PDF: fechamento e vencimento do documento só mudam o cartão quando fazem sentido juntos (uma data de emissão não vira mais o fechamento); extrato em aberto sem vencimento vai inteiro para a fatura que fecha depois da última compra, em vez de espalhar parcelas e compras antigas pelos meses da compra |
 | v37 | 22/11/2026 | Lançamento: a descrição pode ser escrita ou escolhida entre os nomes que você já usou (sugestões que filtram enquanto digita); escolher um nome já usado traz classificação, conta, forma e valor da última vez. Valores em reais com a vírgula automática: digite só os números (1234 → 12,34) |
 | v36 | 22/11/2026 | Calendário antes do mês de partida: não repete mais o saldo do mês de partida; cada dia mostra "—" ou o histórico importado (ex.: +2.000 hist.), e o dia aberto lista esses lançamentos. Na faixa de meses, esses meses mostram "—" |

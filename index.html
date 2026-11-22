@@ -2741,6 +2741,7 @@ function fatCardHTML(F){
       ${L('Parcelas vigentes', fmt(F.parc))}
       ${L('Assinaturas e recorrentes', fmt(F.rec))}
       ${L('Total da fatura', fmt(F.total), 'tot')}
+      ${(()=>{ const t=r2(F.items.filter(o=>o.third).reduce((x,o)=>x+o.amount,0)); if (t<=0.004) return ''; const w=[...new Set(F.items.filter(o=>o.third).map(o=>o.e.whoName||'outra pessoa'))].join(', '); return L(`Inclui ${esc(w)} (reembolso previsto)`, fmt(t), 'sub'); })()}
       ${F.recd||F.state==='paid'?L('Pago', '−'+fmt(F.paid), 'c-in'):''}
       ${F.next>0?L(`Vai para ${mLabel(nextM)}${F.recd&&F.recd.juros?` (com ${String(F.recd.juros).replace('.',',')}% de juros)`:''}`, fmt(F.next), 'c-warn'):''}
     </div>
@@ -3747,7 +3748,8 @@ function doImport(){
     if (r.parc && r.kind==='out'){ const rest=r.parc.n-r.parc.k+1; delete e.amount;
       e = {...e, type:'installment', name:r.parc.base||r.desc, n:rest, total:r2(r.amount*rest), k0:r.parc.k, ofN:r.parc.n, dayRule:'fixed'}; }
     if (r.kind==='out'){ e.cat=r.cat; e.method=a.kind==='card'?'Cartão':'Débito'; e.whoUsed=other?'other':'me'; e.whoName=other?r.who:''; }
-    if (r.m < CUR){ e.hist=1; S.status[e.id+'|'+r.m]=true; }
+    // histórico só para o que já passou inteiro: uma compra parcelada com parcelas daqui para frente continua valendo
+    if (e.type==='installment' ? addM(e.start, e.n-1) < CUR : r.m < CUR){ e.hist=1; S.status[e.id+'|'+r.m]=true; }
     S.entries.push(e); if (r.done) S.status[e.id+'|'+r.m]=true; syncReimb(e); created++;
   }
   for (const id of touched){ const a=accById(id); if (!a) continue; if (a.kind==='card') a.reviewed[CUR]=true; a.lastSync=TODAY_ISO; }
