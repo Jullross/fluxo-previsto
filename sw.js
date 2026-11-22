@@ -1,6 +1,6 @@
 // Service worker do Fluxo Previsto: guarda o app no aparelho para abrir rápido e funcionar offline.
 // Ao publicar uma versão nova do index.html, aumente o número em CACHE para os celulares baixarem a atualização.
-const CACHE = 'fluxo-previsto-v42';
+const CACHE = 'fluxo-previsto-v43';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './privacidade.html', './termos.html'];
 
 self.addEventListener('install', (event) => {

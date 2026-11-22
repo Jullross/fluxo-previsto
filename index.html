@@ -2906,8 +2906,11 @@ function challengeFor(m){
   const R = row.ownIn;
   const fut = Pb.filter(r=>r.m>=CUR).slice(0,12);
   const avgIn = fut.reduce((s,r)=>s+r.ownIn,0)/Math.max(fut.length,1), cushion = avgIn*0.15;
-  const ok = X => { const Px=project([...base, ...vaultEntriesFor(m, splitDeposits(row,X))]); const lo=lowFrom(Px, CUR, TODAY); return lo && lo.min>=cushion; };
-  let hard=0; const lo0=lowFrom(Pb, m>=CUR?m:CUR, m===CUR?TODAY:1);
+  // A folga de um mês é medida dali para a frente: um aperto de hoje (antes do salário) não zera os meses seguintes,
+  // porque o depósito do desafio de dezembro só sai em dezembro, depois de o salário cair.
+  const fromM = m>CUR ? m : CUR, fromD = m>CUR ? 1 : TODAY;
+  const ok = X => { const Px=project([...base, ...vaultEntriesFor(m, splitDeposits(row,X))]); const lo=lowFrom(Px, fromM, fromD); return lo && lo.min>=cushion; };
+  let hard=0; const lo0=lowFrom(Pb, fromM, fromD);
   let hi = lo0 ? Math.max(0, lo0.min - cushion) : 0;
   if (hi>0 && ok(0)){ let a=0, b=hi; if (ok(b)) a=b; else { for (let i=0;i<16;i++){ const mid=(a+b)/2; if (ok(mid)) a=mid; else b=mid; } } hard=floor10(a); }
   const surplus = Math.max(0, row.ownIn - (row.ownOut - row.outs.filter(o=>o.e.vault).reduce((s,o)=>s+o.amount,0)) - row.outs.filter(o=>o.third).reduce((s,o)=>s+o.amount,0)*0);
