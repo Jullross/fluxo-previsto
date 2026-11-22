@@ -959,10 +959,31 @@ body:not(.locked) #auth{display:none!important}
 .day.pre .bal .c-in{color:var(--go-text)} .day.pre .bal .c-out{color:var(--stop-text)}
 .day .hist-f{opacity:.75;font-style:italic}
 
-.name-sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.name-sug:empty{display:none}
-.name-sug button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:5px 11px;font-size:12.5px;font-weight:500;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.name-sug button:active{background:var(--surface-2)}
+.cbx{position:relative}
+.cbx-list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 40px -12px var(--shadow);padding:6px;max-height:min(320px,46vh);overflow-y:auto;overscroll-behavior:contain;animation:fadeUp .16s var(--ease,ease)}
+.cbx-it{display:flex;flex-direction:column;gap:1px;padding:9px 11px;border-radius:10px;cursor:pointer}
+.cbx-it .n{font-size:14px;font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbx-it .m{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbx-it:hover,.cbx-it.on{background:var(--surface-2)}
+.mpk-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;cursor:pointer;width:100%;min-width:0}
+.mpk-btn > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mpk-s{display:none}
+@media (max-width:767px){.mpk-l{display:none}.mpk-s{display:inline}}
+.mpk-btn .ph{color:var(--faint)} .mpk-btn svg{color:var(--muted);flex:0 0 auto}
+.mpk-btn:disabled{opacity:.55;cursor:not-allowed}
+.field{position:relative}
+.mpk-pop{position:absolute;left:0;top:calc(100% + 6px);z-index:40;width:min(300px,86vw);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px -12px var(--shadow);padding:12px;display:flex;flex-direction:column;gap:10px;animation:fadeUp .16s var(--ease,ease)}
+.mpk-h{display:flex;align-items:center;justify-content:space-between}
+.mpk-h b{font-family:var(--f-num);font-size:15px}
+.mpk-h button{border:0;background:none;color:var(--muted);width:32px;height:32px;border-radius:10px;display:grid;place-items:center}
+.mpk-h button:hover{background:var(--surface-2);color:var(--fg)}
+.mpk-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.mpk-g button{border:1px solid transparent;background:var(--bg);color:var(--fg);border-radius:10px;padding:9px 0;font-size:13.5px;font-weight:500}
+.mpk-g button:hover{background:var(--surface-2)}
+.mpk-g button.cur{border-color:var(--line-strong)}
+.mpk-g button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mpk-f{display:flex;justify-content:space-between}
+.mpk-f button{border:0;background:none;color:var(--accent);font-weight:600;font-size:13px;padding:4px 2px}
 /* ===== Impressão / salvar como PDF pelo navegador ===== */
 @media print{
   :root{--bg:#fff;--surface:#fff;--surface-2:#f2f3f6;--line:#d9dde6;--fg:#141922;--muted:#566074;--faint:#949cad;--accent:#0d9488;--accent-ink:#fff;--cal-bal:#0369a1;--go-text:#047857;--stop-text:#dc2626;--care-text:#b45309;color-scheme:light}
@@ -1267,14 +1288,14 @@ body:not(.locked) #auth{display:none!important}
     <div class="seg kind" id="f-kind"><button type="button" data-v="in">Entrada</button><button type="button" data-v="out">Saída</button><button type="button" data-v="transfer">Transferência</button></div>
     <div class="seg" id="f-type"><button type="button" data-v="recurring">Recorrente</button><button type="button" data-v="installment">Parcelado</button><button type="button" data-v="single">Único</button></div>
     <div class="hint" id="f-hint"></div>
-    <label class="field"><span>Descrição</span><input class="inp" id="f-name" autocomplete="off" list="f-names" placeholder="Escreva ou escolha: Salário, Mercado, Uber…"><datalist id="f-names"></datalist><div class="name-sug" id="f-name-sug"></div></label>
+    <label class="field"><span>Descrição</span><div class="cbx"><input class="inp" id="f-name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="f-name-list" aria-autocomplete="list" placeholder="Escreva ou escolha: Salário, Mercado, Uber…"><div class="cbx-list" id="f-name-list" role="listbox" hidden></div></div></label>
     <label class="field" id="wrap-cat"><span>Classificação do custo</span><select class="inp" id="f-cat"></select><span class="sub" id="f-cat-hint" style="font-weight:400"></span></label>
     <div class="grid grid-cols-2 gap-3">
       <label class="field"><span id="f-amount-label">Valor</span><input class="inp num" id="f-amount" inputmode="numeric" data-money placeholder="0,00"></label>
       <label class="field" id="wrap-n"><span>Nº de parcelas</span><input class="inp num" id="f-n" type="number" min="2" max="120" value="3"></label>
       <label class="field"><span id="f-start-label">Mês</span><input class="inp" id="f-start" type="month"></label>
       <label class="field" id="wrap-day"><span>Dia previsto</span><input class="inp num" id="f-day" type="number" min="1" max="31" value="5"></label>
-      <label class="field" id="wrap-end"><span>Último mês (opcional)</span><input class="inp" id="f-end" type="month"></label>
+      <label class="field" id="wrap-end"><span>Último mês (opcional)</span><input class="inp" id="f-end" type="month" data-clear></label>
       <label class="field" id="wrap-method"><span>Forma</span><select class="inp" id="f-method"><option>Cartão</option><option>Pix</option><option>Débito</option><option>Boleto</option><option>Dinheiro</option></select></label>
       <label class="field col-span-2" id="wrap-acc"><span>Banco ou cartão</span><select class="inp" id="f-acc"></select></label>
       <label class="field" id="wrap-from" hidden><span>Saiu de (conta origem)</span><select class="inp" id="f-from"></select></label>
@@ -3130,7 +3151,12 @@ $$('#f-kind,#f-type,#f-scope,#f-who,#f-status').forEach(seg=>seg.addEventListene
 }));
 $('#f-cat').addEventListener('change',()=>{ if(F) F.catTouched=true; syncForm(); });
 $('#f-name').addEventListener('change', applyNameSug);
-$('#f-name').addEventListener('input', ()=>{ if (F && !F.id) fillNameSug(); });
+$('#f-name').addEventListener('input', ()=>{ if (F) fillNameSug(); });
+$('#f-name').addEventListener('focus', ()=>{ if (F) fillNameSug(); });
+$('#f-name').addEventListener('blur', ()=>setTimeout(()=>{ $('#f-name-list').hidden=true; $('#f-name').setAttribute('aria-expanded','false'); }, 120));
+$('#f-name').addEventListener('keydown', ev=>{ const L=$('#f-name-list'); if (L.hidden) return;
+  if (ev.key==='ArrowDown'){ ev.preventDefault(); moveCbx(1); } else if (ev.key==='ArrowUp'){ ev.preventDefault(); moveCbx(-1); }
+  else if (ev.key==='Enter' && CBX.at>=0){ ev.preventDefault(); pickCbx(CBX.at); } else if (ev.key==='Escape'){ ev.stopPropagation(); L.hidden=true; } });
 ['#f-from','#f-to','#f-method'].forEach(x=>$(x).addEventListener('change',()=>F&&syncForm()));
 $('#f-acc').addEventListener('change',()=>{ const a=accById($('#f-acc').value); if (a && a.kind==='card'){ $('#f-method').value='Cartão'; if (a.dueDay && !F.id) $('#f-day').value=a.dueDay; if (a.holder==='shared' && a.holderName && !$('#f-whoname').value) $('#f-whoname').value=a.holderName; } syncForm(); });
 function accOptions(sel){ return `<option value="">Nenhum</option>`+S.accounts.map(a=>`<option value="${a.id}" ${a.id===sel?'selected':''}>${esc(a.name)}${a.kind==='card'?' · cartão':' · conta'}${a.holder==='third'?' ('+esc(a.holderName||'terceiro')+')':''}</option>`).join(''); }
@@ -3155,11 +3181,15 @@ function openEntry(id, ctx, kind, day){
   $('#f-cat').value = e&&e.kind==='out' ? inferCat(e) : inferCat({type:F.type==='installment'?'installment':F.type});
   $('#f-amount').value = e ? moneyIn(e.type==='recurring'?amountAt(e,ctx>=e.start?ctx:e.start):e.type==='installment'?e.total:e.amount) : '';
   $('#f-error').hidden=true;
-  fillNameSug(); syncForm(); $('#m-entry').hidden=false; setTimeout(()=>$('#f-name').focus(),30);
+  $('#f-name-list').hidden=true; syncForm(); $('#m-entry').hidden=false; setTimeout(()=>{ if (!F.id) $('#f-name').focus(); },30);
 }
 // Descrição: escreve à mão ou escolhe um nome que você já usou (os mais usados primeiro). Escolher um nome já usado
 // num lançamento novo traz a classificação, a conta e a forma de pagamento da última vez.
-const cleanName = n => { const p=String(n||'').split('|'); return (p.length>1 && p[1].trim() ? p[1] : p[0]).replace(/\s+/g,' ').trim(); };
+const cleanName = n => { const p=String(n||'').split('|'); let t=(p.length>1 && p[1].trim() ? p[1] : p[0]).replace(/\s+/g,' ').trim();
+  t=t.replace(/^(?:[A-Z0-9]{2,5}\s?\*\s?)+/,'').replace(/\.{2,}$|…$/,'').replace(/\s*\*\s*/g,' ').trim();
+  // TUDO MAIÚSCULO vira Título (Super Kibarato); siglas (IOF, CFC) ficam em maiúsculas
+  if (t===t.toUpperCase() && /[A-ZÀ-Ý]{3}/.test(t)) t=t.toLowerCase().replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(Iof|Cfc|Ltda|Pix|Rdb|Cdb)\b/g,w=>w.toUpperCase()).replace(/\s(De|Da|Do|Das|Dos|E)(?=\s)/g,w=>w.toLowerCase());
+  return t; };
 function nameStats(kind){
   const by={};
   for (const e of S.entries){ if (e.virtual || e.vault || e.fat || e.reimbursementFor || (kind && e.kind!==kind)) continue;
@@ -3167,14 +3197,19 @@ function nameStats(kind){
     const b=by[k]||(by[k]={name:n, count:0, last:null}); b.count++; if (!b.last || (e.start||'')>=(b.last.start||'')) b.last=e; }
   return Object.values(by).sort((a,b)=>b.count-a.count || (b.last.start||'').localeCompare(a.last.start||''));
 }
+let CBX={items:[], at:-1};
 function fillNameSug(){
-  const st=nameStats(F.kind==='transfer'?'transfer':F.kind);
-  $('#f-names').innerHTML = st.slice(0,80).map(x=>`<option value="${esc(x.name)}"></option>`).join('');
-  const box=$('#f-name-sug');
-  const q=$('#f-name').value.trim().toLowerCase(), pick = q ? st.filter(x=>x.name.toLowerCase().includes(q) && x.name.toLowerCase()!==q) : st;
-  box.innerHTML = F.id ? '' : pick.slice(0,6).map(x=>`<button type="button" data-nsug="${esc(x.name)}">${esc(x.name)}</button>`).join('');
-  box.querySelectorAll('[data-nsug]').forEach(b=>b.onclick=()=>{ $('#f-name').value=b.dataset.nsug; applyNameSug(); $('#f-amount').focus(); });
+  const st=nameStats(F.kind==='transfer'?'transfer':F.kind), q=$('#f-name').value.trim().toLowerCase(), list=$('#f-name-list');
+  const norm=x=>x.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  CBX.items = (q ? st.filter(x=>norm(x.name).includes(norm(q)) && x.name.toLowerCase()!==q) : st).slice(0,8); CBX.at=-1;
+  const open = document.activeElement===$('#f-name') && CBX.items.length>0;
+  list.innerHTML = CBX.items.map((x,i)=>{ const e=x.last, a=accById(e.accountId), v=e.type==='installment'?e.total:e.type==='recurring'?amountAt(e,CUR>=e.start?CUR:e.start):e.amount;
+    return `<div class="cbx-it" role="option" id="cbx-${i}" data-i="${i}"><span class="n">${esc(x.name)}</span><span class="m">${x.count>1?x.count+'× · ':''}${a?esc(shortName(a.name)):''}${v>0?' · '+fmt(v):''}</span></div>`; }).join('');
+  list.hidden=!open; $('#f-name').setAttribute('aria-expanded', String(open));
+  list.querySelectorAll('.cbx-it').forEach(el=>el.addEventListener('mousedown', ev=>{ ev.preventDefault(); pickCbx(+el.dataset.i); }));
 }
+function pickCbx(i){ const x=CBX.items[i]; if (!x) return; $('#f-name').value=x.name; $('#f-name-list').hidden=true; $('#f-name').setAttribute('aria-expanded','false'); applyNameSug(); setTimeout(()=>$('#f-amount').focus(),0); }
+function moveCbx(d){ const n=CBX.items.length; if (!n) return; CBX.at=(CBX.at+d+n)%n; $$('#f-name-list .cbx-it').forEach((el,i)=>el.classList.toggle('on', i===CBX.at)); const el=$('#cbx-'+CBX.at); if (el){ el.scrollIntoView({block:'nearest'}); $('#f-name').setAttribute('aria-activedescendant', el.id); } }
 function applyNameSug(){
   if (!F || F.id) return;
   const n=$('#f-name').value.trim().toLowerCase(); if (!n) return;
@@ -4627,6 +4662,35 @@ function moneyMask(el){
 // fase de captura: o valor já chega formatado para quem escuta o campo depois (prévia, conferência, simulador)
 document.addEventListener('input', ev=>{ const t=ev.target; if (t && t.matches && t.matches('[data-money]')) moneyMask(t); }, true);
 document.addEventListener('focusin', ev=>{ const t=ev.target; if (t && t.matches && t.matches('[data-money]') && t.value) setTimeout(()=>{ try { t.setSelectionRange(t.value.length, t.value.length); } catch(e) {} }, 0); });
+
+/* ---------- Seletor de mês no visual do app (no lugar do seletor do navegador) ---------- */
+const MSHORT=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function monthPicker(inp){
+  const desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  const btn=document.createElement('button'); btn.type='button'; btn.className='inp mpk-btn'; btn.setAttribute('aria-haspopup','dialog'); btn.setAttribute('aria-expanded','false');
+  const pop=document.createElement('div'); pop.className='mpk-pop'; pop.hidden=true; pop.setAttribute('role','dialog'); pop.setAttribute('aria-label','Escolher mês');
+  inp.hidden=true; inp.after(btn, pop);
+  let y=+(CUR.slice(0,4));
+  const label=()=>{ const v=desc.get.call(inp); btn.innerHTML = `<span>${/^\d{4}-\d{2}$/.test(v)?`<span class="mpk-l">${MFULL[+v.slice(5)-1].toLowerCase()} de ${v.slice(0,4)}</span><span class="mpk-s">${MSHORT[+v.slice(5)-1]} de ${v.slice(0,4)}</span>`:'<span class="ph">Escolher mês</span>'}</span>${ic('calendar',16)}`; btn.disabled=inp.disabled; };
+  Object.defineProperty(inp,'value',{configurable:true, get(){ return desc.get.call(this); }, set(v){ desc.set.call(this,v); label(); }});
+  new MutationObserver(label).observe(inp,{attributes:true, attributeFilter:['disabled']});
+  const close2=()=>{ pop.hidden=true; btn.setAttribute('aria-expanded','false'); };
+  const draw=()=>{ const v=desc.get.call(inp);
+    pop.innerHTML = `<div class="mpk-h"><button type="button" data-y="-1" aria-label="Ano anterior">${ic('chevl',16)}</button><b>${y}</b><button type="button" data-y="1" aria-label="Próximo ano">${ic('chevr',16)}</button></div>
+      <div class="mpk-g">${MSHORT.map((m,i)=>{ const k=y+'-'+pad(i+1); return `<button type="button" data-k="${k}" class="${k===v?'on':''} ${k===CUR?'cur':''}">${m}</button>`; }).join('')}</div>
+      <div class="mpk-f">${inp.dataset.clear!==undefined?'<button type="button" data-k="">Limpar</button>':'<span></span>'}<button type="button" data-k="${CUR}">Este mês</button></div>`;
+    pop.querySelectorAll('[data-y]').forEach(b=>b.onclick=ev=>{ ev.preventDefault(); y+=+b.dataset.y; draw(); });
+    pop.querySelectorAll('[data-k]').forEach(b=>b.onclick=ev=>{ ev.preventDefault(); inp.value=b.dataset.k; close2(); inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); });
+  };
+  btn.addEventListener('click', ev=>{ ev.preventDefault(); if (!pop.hidden) return close2(); const v=desc.get.call(inp); y=/^\d{4}/.test(v)?+v.slice(0,4):+CUR.slice(0,4); draw(); pop.hidden=false; btn.setAttribute('aria-expanded','true');
+    // abre para o lado que cabe dentro da janela (coluna da direita abre para a esquerda)
+    const box=(btn.closest('.sheet')||document.body).getBoundingClientRect(), r=btn.getBoundingClientRect(), w=pop.offsetWidth;
+    if (r.left+w > box.right-8){ pop.style.left='auto'; pop.style.right='0'; } else { pop.style.left='0'; pop.style.right='auto'; } });
+  document.addEventListener('mousedown', ev=>{ if (!pop.hidden && !pop.contains(ev.target) && ev.target!==btn && !btn.contains(ev.target)) close2(); });
+  document.addEventListener('keydown', ev=>{ if (ev.key==='Escape' && !pop.hidden){ ev.stopPropagation(); close2(); } }, true);
+  label();
+}
+['#f-start','#f-end','#s-base'].forEach(id=>{ const el=$(id); if (el) monthPicker(el); });
 
 /* ---------- PWA: service worker e instalação ---------- */
 let deferredPrompt=null;
