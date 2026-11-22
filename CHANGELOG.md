@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v37 | 22/11/2026 | Lançamento: a descrição pode ser escrita ou escolhida entre os nomes que você já usou (sugestões que filtram enquanto digita); escolher um nome já usado traz classificação, conta, forma e valor da última vez. Valores em reais com a vírgula automática: digite só os números (1234 → 12,34) |
 | v36 | 22/11/2026 | Calendário antes do mês de partida: não repete mais o saldo do mês de partida; cada dia mostra "—" ou o histórico importado (ex.: +2.000 hist.), e o dia aberto lista esses lançamentos. Na faixa de meses, esses meses mostram "—" |
 | v35 | 22/11/2026 | Assistente lança pelo chat: peça ("lança 45 de mercado ontem no Swile") ou cole um extrato; ele separa os lançamentos e o app abre a revisão da importação (com a proteção contra duplicados) para confirmar. Revisão da importação sem números quebrados no celular |
 | v33 | 17/11/2026 | Desafio do mês: aplicações e aportes de verdade (categoria Metas e aportes, saindo da conta) contam como depósito do desafio; o Cofre do Desafio diminui o que já foi aplicado e o mesmo dinheiro não sai duas vezes |

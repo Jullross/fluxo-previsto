@@ -958,6 +958,11 @@ body:not(.locked) #auth{display:none!important}
 .day.pre .bal{color:var(--faint)!important;font-weight:600}
 .day.pre .bal .c-in{color:var(--go-text)} .day.pre .bal .c-out{color:var(--stop-text)}
 .day .hist-f{opacity:.75;font-style:italic}
+
+.name-sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.name-sug:empty{display:none}
+.name-sug button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:5px 11px;font-size:12.5px;font-weight:500;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.name-sug button:active{background:var(--surface-2)}
 /* ===== Impressão / salvar como PDF pelo navegador ===== */
 @media print{
   :root{--bg:#fff;--surface:#fff;--surface-2:#f2f3f6;--line:#d9dde6;--fg:#141922;--muted:#566074;--faint:#949cad;--accent:#0d9488;--accent-ink:#fff;--cal-bal:#0369a1;--go-text:#047857;--stop-text:#dc2626;--care-text:#b45309;color-scheme:light}
@@ -1168,7 +1173,7 @@ body:not(.locked) #auth{display:none!important}
       <button class="btn btn-primary" id="qs-open"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> Gastei agora</button>
     </div>
     <form class="quick" id="qs-form" hidden novalidate>
-      <label class="field"><span>Quanto?</span><input class="inp num" id="qs-amount" inputmode="decimal" placeholder="0,00" autocomplete="off"></label>
+      <label class="field"><span>Quanto?</span><input class="inp num" id="qs-amount" inputmode="numeric" data-money placeholder="0,00" autocomplete="off"></label>
       <label class="field"><span>Com o quê?</span><input class="inp" id="qs-name" placeholder="Ex.: Almoço, Uber, farmácia" autocomplete="off"></label>
       <label class="field"><span>Bloco</span><select class="inp" id="qs-cat"></select></label>
       <label class="field"><span>Saiu de</span><select class="inp" id="qs-acc"></select></label>
@@ -1262,10 +1267,10 @@ body:not(.locked) #auth{display:none!important}
     <div class="seg kind" id="f-kind"><button type="button" data-v="in">Entrada</button><button type="button" data-v="out">Saída</button><button type="button" data-v="transfer">Transferência</button></div>
     <div class="seg" id="f-type"><button type="button" data-v="recurring">Recorrente</button><button type="button" data-v="installment">Parcelado</button><button type="button" data-v="single">Único</button></div>
     <div class="hint" id="f-hint"></div>
-    <label class="field"><span>Descrição</span><input class="inp" id="f-name" autocomplete="off" placeholder="Ex.: Salário, Internet, Celular novo"></label>
+    <label class="field"><span>Descrição</span><input class="inp" id="f-name" autocomplete="off" list="f-names" placeholder="Escreva ou escolha: Salário, Mercado, Uber…"><datalist id="f-names"></datalist><div class="name-sug" id="f-name-sug"></div></label>
     <label class="field" id="wrap-cat"><span>Classificação do custo</span><select class="inp" id="f-cat"></select><span class="sub" id="f-cat-hint" style="font-weight:400"></span></label>
     <div class="grid grid-cols-2 gap-3">
-      <label class="field"><span id="f-amount-label">Valor</span><input class="inp num" id="f-amount" inputmode="decimal" placeholder="0,00"></label>
+      <label class="field"><span id="f-amount-label">Valor</span><input class="inp num" id="f-amount" inputmode="numeric" data-money placeholder="0,00"></label>
       <label class="field" id="wrap-n"><span>Nº de parcelas</span><input class="inp num" id="f-n" type="number" min="2" max="120" value="3"></label>
       <label class="field"><span id="f-start-label">Mês</span><input class="inp" id="f-start" type="month"></label>
       <label class="field" id="wrap-day"><span>Dia previsto</span><input class="inp num" id="f-day" type="number" min="1" max="31" value="5"></label>
@@ -1329,7 +1334,7 @@ body:not(.locked) #auth{display:none!important}
     <div id="pf-sum"></div>
     <div class="seg" id="pf-mode"><button type="button" data-v="total">Valor total</button><button type="button" data-v="part">Parcial</button><button type="button" data-v="none">Não paguei</button></div>
     <div class="grid grid-cols-2 gap-3">
-      <label class="field" id="pf-wrap-amt"><span>Quanto pagou</span><input class="inp num" id="pf-amt" inputmode="decimal" placeholder="0,00"></label>
+      <label class="field" id="pf-wrap-amt"><span>Quanto pagou</span><input class="inp num" id="pf-amt" inputmode="numeric" data-money placeholder="0,00"></label>
       <label class="field" id="pf-wrap-jur"><span>Juros do rotativo (% · opcional)</span><input class="inp num" id="pf-jur" inputmode="decimal" placeholder="0"></label>
       <label class="field col-span-2" id="pf-wrap-from"><span>Pago com</span><select class="inp" id="pf-from"></select></label>
     </div>
@@ -1350,11 +1355,11 @@ body:not(.locked) #auth{display:none!important}
     <div class="grid grid-cols-2 gap-3">
       <label class="field col-span-2"><span>Descrição</span><input class="inp" id="d-name" placeholder="Ex.: Rotativo do cartão antigo" autocomplete="off"></label>
       <label class="field col-span-2"><span>Credor (opcional)</span><input class="inp" id="d-creditor" placeholder="Ex.: Banco, loja, operadora" autocomplete="off"></label>
-      <label class="field"><span>Valor original</span><input class="inp num" id="d-original" inputmode="decimal" placeholder="0,00"></label>
-      <label class="field"><span>Saldo atual com juros</span><input class="inp num" id="d-current" inputmode="decimal" placeholder="0,00"></label>
-      <label class="field col-span-2"><span>Acordo à vista (opcional)</span><input class="inp num" id="d-cash" inputmode="decimal" placeholder="Valor mínimo para quitar à vista"></label>
+      <label class="field"><span>Valor original</span><input class="inp num" id="d-original" inputmode="numeric" data-money placeholder="0,00"></label>
+      <label class="field"><span>Saldo atual com juros</span><input class="inp num" id="d-current" inputmode="numeric" data-money placeholder="0,00"></label>
+      <label class="field col-span-2"><span>Acordo à vista (opcional)</span><input class="inp num" id="d-cash" inputmode="numeric" data-money placeholder="Valor mínimo para quitar à vista"></label>
       <label class="field"><span>Acordo parcelado: nº de parcelas</span><input class="inp num" id="d-n" type="number" min="2" max="120" placeholder="Ex.: 12"></label>
-      <label class="field"><span>Valor de cada parcela</span><input class="inp num" id="d-inst" inputmode="decimal" placeholder="0,00"></label>
+      <label class="field"><span>Valor de cada parcela</span><input class="inp num" id="d-inst" inputmode="numeric" data-money placeholder="0,00"></label>
     </div>
     <div class="c-out text-sm" id="d-error" hidden></div>
     <div class="flex gap-2 justify-end"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn btn-primary">Salvar dívida</button></div>
@@ -1472,8 +1477,8 @@ body:not(.locked) #auth{display:none!important}
     </div>
     <div class="grid grid-cols-2 gap-3">
       <label class="field col-span-2 sm:col-span-1"><span>Mês de partida</span><input class="inp" id="s-base" type="month"></label>
-      <label class="field col-span-2 sm:col-span-1"><span>Saldo no início desse mês</span><input class="inp num" id="s-balance" inputmode="decimal"></label>
-      <label class="field col-span-2"><span>Quanto você tem hoje, somando as contas</span><input class="inp num" id="s-today" inputmode="decimal">
+      <label class="field col-span-2 sm:col-span-1"><span>Saldo no início desse mês</span><input class="inp num" id="s-balance" inputmode="numeric" data-money data-neg></label>
+      <label class="field col-span-2"><span>Quanto você tem hoje, somando as contas</span><input class="inp num" id="s-today" inputmode="numeric" data-money data-neg>
         <span class="sub" style="font-weight:400">Ajuste aqui se o "Quanto eu tenho hoje" não bater com o banco. Lançamentos de meses anteriores não mudam esse valor.</span></label>
     </div>
     <div class="flex flex-col gap-3">
@@ -3123,6 +3128,8 @@ $$('#f-kind,#f-type,#f-scope,#f-who,#f-status').forEach(seg=>seg.addEventListene
   syncForm();
 }));
 $('#f-cat').addEventListener('change',()=>{ if(F) F.catTouched=true; syncForm(); });
+$('#f-name').addEventListener('change', applyNameSug);
+$('#f-name').addEventListener('input', ()=>{ if (F && !F.id) fillNameSug(); });
 ['#f-from','#f-to','#f-method'].forEach(x=>$(x).addEventListener('change',()=>F&&syncForm()));
 $('#f-acc').addEventListener('change',()=>{ const a=accById($('#f-acc').value); if (a && a.kind==='card'){ $('#f-method').value='Cartão'; if (a.dueDay && !F.id) $('#f-day').value=a.dueDay; if (a.holder==='shared' && a.holderName && !$('#f-whoname').value) $('#f-whoname').value=a.holderName; } syncForm(); });
 function accOptions(sel){ return `<option value="">Nenhum</option>`+S.accounts.map(a=>`<option value="${a.id}" ${a.id===sel?'selected':''}>${esc(a.name)}${a.kind==='card'?' · cartão':' · conta'}${a.holder==='third'?' ('+esc(a.holderName||'terceiro')+')':''}</option>`).join(''); }
@@ -3147,7 +3154,35 @@ function openEntry(id, ctx, kind, day){
   $('#f-cat').value = e&&e.kind==='out' ? inferCat(e) : inferCat({type:F.type==='installment'?'installment':F.type});
   $('#f-amount').value = e ? moneyIn(e.type==='recurring'?amountAt(e,ctx>=e.start?ctx:e.start):e.type==='installment'?e.total:e.amount) : '';
   $('#f-error').hidden=true;
-  syncForm(); $('#m-entry').hidden=false; setTimeout(()=>$('#f-name').focus(),30);
+  fillNameSug(); syncForm(); $('#m-entry').hidden=false; setTimeout(()=>$('#f-name').focus(),30);
+}
+// Descrição: escreve à mão ou escolhe um nome que você já usou (os mais usados primeiro). Escolher um nome já usado
+// num lançamento novo traz a classificação, a conta e a forma de pagamento da última vez.
+const cleanName = n => { const p=String(n||'').split('|'); return (p.length>1 && p[1].trim() ? p[1] : p[0]).replace(/\s+/g,' ').trim(); };
+function nameStats(kind){
+  const by={};
+  for (const e of S.entries){ if (e.virtual || e.vault || e.fat || e.reimbursementFor || (kind && e.kind!==kind)) continue;
+    const n=cleanName(e.name); if (!n || n.length<2) continue; const k=n.toLowerCase();
+    const b=by[k]||(by[k]={name:n, count:0, last:null}); b.count++; if (!b.last || (e.start||'')>=(b.last.start||'')) b.last=e; }
+  return Object.values(by).sort((a,b)=>b.count-a.count || (b.last.start||'').localeCompare(a.last.start||''));
+}
+function fillNameSug(){
+  const st=nameStats(F.kind==='transfer'?'transfer':F.kind);
+  $('#f-names').innerHTML = st.slice(0,80).map(x=>`<option value="${esc(x.name)}"></option>`).join('');
+  const box=$('#f-name-sug');
+  const q=$('#f-name').value.trim().toLowerCase(), pick = q ? st.filter(x=>x.name.toLowerCase().includes(q) && x.name.toLowerCase()!==q) : st;
+  box.innerHTML = F.id ? '' : pick.slice(0,6).map(x=>`<button type="button" data-nsug="${esc(x.name)}">${esc(x.name)}</button>`).join('');
+  box.querySelectorAll('[data-nsug]').forEach(b=>b.onclick=()=>{ $('#f-name').value=b.dataset.nsug; applyNameSug(); $('#f-amount').focus(); });
+}
+function applyNameSug(){
+  if (!F || F.id) return;
+  const n=$('#f-name').value.trim().toLowerCase(); if (!n) return;
+  const x=nameStats(F.kind).find(y=>y.name.toLowerCase()===n); if (!x) return; const e=x.last;
+  if (e.kind==='out' && !F.catTouched){ $('#f-cat').value=inferCat(e); }
+  if (e.accountId && accById(e.accountId) && !$('#f-acc').value){ $('#f-acc').value=e.accountId; $('#f-acc').dispatchEvent(new Event('change')); }
+  if (e.method) $('#f-method').value=e.method;
+  if (!$('#f-amount').value){ const v=e.type==='recurring'?amountAt(e,CUR>=e.start?CUR:e.start):e.type==='installment'?e.total:e.amount; if (v>0) $('#f-amount').value=(+v).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+  syncForm();
 }
 function syncForm(){
   setSeg('f-kind',F.kind); setSeg('f-type',F.type); setSeg('f-scope',F.scope); setSeg('f-who',F.who);
@@ -3296,7 +3331,7 @@ function openCheck(){
   const src={of:'Open Finance', arquivo:'extrato', manual:'você'};
   $('#ck-list').innerHTML = accs.map(a=>`<div class="ck-row"><div class="n"><b><i class="dot" style="background:${a.color}"></i> ${esc(a.name)}</b>
       <span class="sub" style="font-size:12px">${a.bank?`${fmt(+a.bank.v)} em ${a.bank.at.slice(8,10)}/${a.bank.at.slice(5,7)} · ${src[a.bank.src]||'você'}`:'saldo ainda não informado'}</span></div>
-      <input class="inp num" data-ck="${a.id}" inputmode="decimal" placeholder="0,00" value="${a.bank?moneyIn(+a.bank.v):''}" aria-label="Saldo agora no ${esc(a.name)}"></div>`).join('');
+      <input class="inp num" data-ck="${a.id}" inputmode="numeric" data-money placeholder="0,00" value="${a.bank?moneyIn(+a.bank.v):''}" aria-label="Saldo agora no ${esc(a.name)}"></div>`).join('');
   $$('#ck-list [data-ck]').forEach(i=>i.oninput=syncCheck);
   syncCheck(); $('#m-check').hidden=false;
 }
@@ -3642,7 +3677,7 @@ function renderPreview(){
     ${saldo?`<div class="isaldo">
       <div class="v"><span class="label">Saldo disponível no arquivo</span><b class="num">${fmt(saldo.value)}</b><span class="sub" style="font-size:12px">${saldo.date?'em '+saldo.date.slice(8,10)+'/'+saldo.date.slice(5,7)+' · ':''}não entra como gasto</span></div>
       <div class="ask"><label class="flex items-center gap-2" style="font-weight:600"><input type="checkbox" id="i-saldo-on" ${IM.saldoOn?'checked':''}> Usar como o meu saldo de hoje</label>
-        <input class="inp num" id="i-saldo-v" inputmode="decimal" value="${moneyIn(IM.saldoV!=null?IM.saldoV:r2(saldo.value+others))}" aria-label="Saldo de hoje, somando as contas">
+        <input class="inp num" id="i-saldo-v" inputmode="numeric" data-money data-neg value="${moneyIn(IM.saldoV!=null?IM.saldoV:r2(saldo.value+others))}" aria-label="Saldo de hoje, somando as contas">
         <span class="sub" style="font-size:12px;flex-basis:100%">${others?`Já somei ${fmt(r2(others))} das suas outras contas (último saldo conhecido). `:'Some o que tiver em outras contas. '}Isso ajusta o "Quanto eu tenho hoje" sem mudar o histórico.</span></div>
     </div>`:''}
     <div class="iblocks">${Object.entries(CATS).map(([k,c])=>`<div class="ibrow"><span><i class="dot" style="background:${c.color}"></i>${c.label}</span><div class="itrack"><i data-bar="${k}" style="width:${(byCat[k]/maxCat*100).toFixed(1)}%;background:${c.color};transition:width .35s var(--ease,ease)"></i></div><span class="num" data-barv="${k}">${fmt(byCat[k])}</span></div>`).join('')}</div>
@@ -4570,6 +4605,17 @@ $('#ai-form').addEventListener('submit', ev=>{ ev.preventDefault(); askAI($('#ai
 $('#ai-q').addEventListener('keydown', ev=>{ if (ev.key==='Enter' && !ev.shiftKey){ ev.preventDefault(); askAI($('#ai-q').value); } });
 $('#ai-q').addEventListener('input', ()=>{ const t=$('#ai-q'); t.style.height='auto'; t.style.height=Math.min(120,t.scrollHeight)+'px'; });
 $('#ai-clear').onclick=()=>{ if (AI.busy) return; AI.msgs=[]; renderAI(); };
+
+
+/* ---------- Valores em reais: digita só os números e a vírgula entra sozinha (1 → 0,01 · 1234 → 12,34) ---------- */
+function moneyMask(el){
+  const raw=String(el.value||''), neg=/-|−/.test(raw) && el.hasAttribute('data-neg'), dg=raw.replace(/\D/g,'').replace(/^0+/,'').slice(0,13);
+  const v = dg ? (neg?'-':'') + (+dg/100).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}) : (neg?'-':'');
+  if (el.value!==v){ el.value=v; try { el.setSelectionRange(v.length, v.length); } catch(e) {} }
+}
+// fase de captura: o valor já chega formatado para quem escuta o campo depois (prévia, conferência, simulador)
+document.addEventListener('input', ev=>{ const t=ev.target; if (t && t.matches && t.matches('[data-money]')) moneyMask(t); }, true);
+document.addEventListener('focusin', ev=>{ const t=ev.target; if (t && t.matches && t.matches('[data-money]') && t.value) setTimeout(()=>{ try { t.setSelectionRange(t.value.length, t.value.length); } catch(e) {} }, 0); });
 
 /* ---------- PWA: service worker e instalação ---------- */
 let deferredPrompt=null;
