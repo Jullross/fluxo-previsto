@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v35 | 22/11/2026 | Assistente lança pelo chat: peça ("lança 45 de mercado ontem no Swile") ou cole um extrato; ele separa os lançamentos e o app abre a revisão da importação (com a proteção contra duplicados) para confirmar. Revisão da importação sem números quebrados no celular |
 | v33 | 17/11/2026 | Desafio do mês: aplicações e aportes de verdade (categoria Metas e aportes, saindo da conta) contam como depósito do desafio; o Cofre do Desafio diminui o que já foi aplicado e o mesmo dinheiro não sai duas vezes |
 | v31 | 16/11/2026 | Faturas de Cartão: "Ver os lançamentos desta fatura" com editar e excluir (parcelado: compra inteira; recorrente: parar a partir do mês ou excluir de todos); Assistente de IA (ícone ✦ e Mais → Assistente) que responde com os números do app, pela função `assistant` do Supabase com o Gemini |
 | v30 | 16/11/2026 | Celular: gesto de trocar de tela só com movimento bem horizontal (rolagem vertical não troca mais de aba); Início com o saldo de hoje em destaque e a sobra do mês embaixo, com cores; Gastei mostra também o saldo de hoje antes e depois; meses antes do mês de partida somem da faixa; lançamentos de histórico com título próprio; Conferir saldo, Ajustes, Calendário, Entradas/Saídas, Minha conta e o botão + Lançamento sem textos quebrados |

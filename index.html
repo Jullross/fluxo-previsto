@@ -940,6 +940,20 @@ body:not(.locked) #auth{display:none!important}
 .ai-form{display:flex;gap:8px;align-items:flex-end}
 .ai-form textarea{flex:1;min-width:0;resize:none;max-height:120px}
 .ai-note{font-size:11.5px;color:var(--faint)}
+
+.ai-lanc{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.ai-li{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;font-size:13px}
+.ai-li .nm{display:flex;flex-direction:column;min-width:0}
+.ai-li .nm .sub{font-size:11.5px}
+.ai-li .num{white-space:nowrap}
+.ai-lt{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+
+@media (max-width:767px){
+  #i-preview .ikpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #i-preview .ikpi.focus{grid-column:1/-1!important}
+  #i-preview .ikpi b{white-space:nowrap;overflow-wrap:normal;font-size:clamp(15px,4.6vw,19px)}
+  #i-preview .ikpi.focus b{font-size:clamp(22px,7vw,28px)}
+}
 /* ===== Impressão / salvar como PDF pelo navegador ===== */
 @media print{
   :root{--bg:#fff;--surface:#fff;--surface-2:#f2f3f6;--line:#d9dde6;--fg:#141922;--muted:#566074;--faint:#949cad;--accent:#0d9488;--accent-ink:#fff;--cal-bal:#0369a1;--go-text:#047857;--stop-text:#dc2626;--care-text:#b45309;color-scheme:light}
@@ -4460,6 +4474,7 @@ function aiContext(){
     hoje: TODAY_ISO, saldo_hoje: cp?cp.now:null, ainda_entra_no_mes: cp?cp.pendIn:null, ainda_sai_no_mes: cp?cp.pendOut:null,
     pode_gastar_por_dia: h?r2(h.teto):null, menor_saldo_proximos_12_meses: h?{valor:h.min, em:h.at}:null,
     contas: S.accounts.filter(a=>a.kind!=='card').map(a=>({conta:a.name, saldo_no_banco:a.bank?a.bank.v:null, em:a.bank?a.bank.at:null})),
+    contas_ids: S.accounts.map(a=>({id:a.id, nome:a.name, tipo:a.kind==='card'?'cartão':'conta'})),
     meses: months, cartoes: cards, fixos, parcelados, gastos_avulsos_ja_feitos_este_mes: gastosMes,
     observacao: 'A projeção só inclui o que está lançado. Gastos que variam (transporte, mercado, Pix avulsos) só entram se estiverem lançados; use os gastos avulsos deste mês para estimar o ritmo.'
   };
@@ -4468,7 +4483,12 @@ const AI_SYSTEM = `Você é o assistente do Fluxo Previsto, um app de previsibil
 Use SÓ os números do JSON "dados" (valores em reais). Faça as contas de verdade, mês a mês, e mostre os números que sustentam a resposta. Quando a pergunta for sobre parcelar, compare as opções (ex.: 3x, 5x, 6x, 10x) contra a sobra e o saldo mais baixo de cada mês e diga qual cabe com folga.
 Lembre que a projeção não inclui gastos variáveis que não foram lançados: estime o ritmo pelos gastos avulsos do mês e avise quando isso mudar a conclusão. Vale-refeição (VR/Swile) não paga contas que não sejam comida.
 Não invente dados. Se faltar informação, diga o que falta. Você não é consultora financeira: no fim de recomendações de compra ou dívida, lembre em meia frase que a decisão é da pessoa.
-Formato: parágrafos curtos, listas com "- " e negrito com **texto**. Sem títulos e sem tabelas.`;
+Formato: parágrafos curtos, listas com "- " e negrito com **texto**. Sem títulos e sem tabelas.
+LANÇAR PELO CHAT: quando a pessoa pedir para lançar, registrar ou anotar gastos ou recebimentos, ou colar um extrato ou uma lista de transações, você PODE lançar. Escreva uma frase curta (ex.: "Separei 8 lançamentos; confira e toque em Revisar e lançar.") e termine a resposta com um bloco exatamente assim:
+\`\`\`lancar
+[{"tipo":"saida","descricao":"Super Kibarato","valor":623.63,"data":"2026-11-14","conta_id":"<id de contas_ids>","categoria":"essencial","parcelas":null}]
+\`\`\`
+Regras do bloco: JSON válido; "tipo" é "saida" ou "entrada"; "valor" positivo com ponto decimal; "data" AAAA-MM-DD (sem data = hoje; "ontem" = hoje menos 1); "conta_id" é o id da conta ou cartão em contas_ids que combina com o que a pessoa disse (Swile/VR, Nubank, PicPay, cartão Bradesco...) ou null se não der para saber; "categoria" essencial|estilo|futuro|metas ou null; "parcelas" só para compra parcelada no cartão (número total de parcelas; nesse caso "valor" é o total da compra). Linhas de saldo nunca entram. Não diga que já lançou: o app mostra a lista para a pessoa revisar e confirmar. Lançamentos recorrentes (todo mês) não entram pelo bloco: diga para a pessoa marcar como recorrente na edição.`;
 function aiFmt(t){
   const lines=esc(String(t||'')).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').split(/\n/);
   let h='', inList=false;
@@ -4478,11 +4498,38 @@ function aiFmt(t){
 function renderAI(){
   const log=$('#ai-log');
   log.innerHTML = (AI.msgs.length ? '' : `<div class="ai-msg bot"><p>Oi! Pergunte qualquer coisa sobre o seu dinheiro: se uma compra cabe, em quantas vezes parcelar, por que o saldo caiu, quanto dá para gastar até o salário.</p></div>`)
-    + AI.msgs.map(m=>`<div class="ai-msg ${m.role==='user'?'me':'bot'}">${m.role==='user'?esc(m.content):aiFmt(m.content)}</div>`).join('')
+    + AI.msgs.map((m,i)=>`<div class="ai-msg ${m.role==='user'?'me':'bot'}">${m.role==='user'?esc(m.content):aiFmt(m.content)}${m.lanc?aiLancHTML(m,i):''}</div>`).join('')
     + (AI.busy?'<div class="ai-msg bot wait"><i></i><i></i><i></i> pensando…</div>':'');
   $('#ai-sug').innerHTML = AI.msgs.length ? '' : AI_SUG.map(q=>`<button type="button" data-ai-q="${esc(q)}">${esc(q)}</button>`).join('');
   $$('#ai-sug [data-ai-q]').forEach(b=>b.onclick=()=>askAI(b.dataset.aiQ));
+  $$('#ai-log [data-ai-lanc]').forEach(b=>b.onclick=()=>aiLaunch(+b.dataset.aiLanc));
   $('#ai-send').disabled=AI.busy; log.scrollTop=log.scrollHeight;
+}
+// Lista que o assistente separou para lançar: a pessoa revisa na mesma tela da importação (com a proteção contra duplicados)
+function aiAcc(x){ const id=x && x.conta_id; if (id && accById(id)) return accById(id); const nm=String(x&&x.conta||'').toLowerCase(); return (nm && S.accounts.find(a=>a.name.toLowerCase().includes(nm))) || null; }
+function aiDate(d){ return /^\d{4}-\d{2}-\d{2}$/.test(String(d||'')) ? String(d) : TODAY_ISO; }
+function aiLancHTML(m,i){
+  const its=m.lanc, tot=r2(its.reduce((a,x)=>a+(x.tipo==='entrada'?0:+x.valor),0)), noAcc=its.filter(x=>!aiAcc(x)).length;
+  return `<div class="ai-lanc">${its.slice(0,12).map(x=>{ const a=aiAcc(x), d=aiDate(x.data);
+      return `<div class="ai-li"><span class="nm">${esc(x.descricao||'(sem descrição)')}<span class="sub">${d.slice(8,10)}/${d.slice(5,7)} · ${a?esc(a.name):'<b class="c-warn">conta?</b>'}${+x.parcelas>=2?' · '+x.parcelas+'x de '+fmt(r2(+x.valor/ +x.parcelas)):''}</span></span><span class="num ${x.tipo==='entrada'?'c-in':''}">${x.tipo==='entrada'?'+':'−'}${fmt(+x.valor)}</span></div>`; }).join('')}
+    ${its.length>12?`<div class="sub">e mais ${its.length-12}…</div>`:''}
+    <div class="ai-lt"><span class="sub">${its.length} ${its.length===1?'lançamento':'lançamentos'} · saídas ${fmt(tot)}${noAcc?` · ${noAcc} sem conta (você escolhe na revisão)`:''}</span>
+    ${m.launched?'<span class="chip ok">enviado para a revisão</span>':`<button type="button" class="btn btn-sm btn-primary" data-ai-lanc="${i}">Revisar e lançar</button>`}</div></div>`;
+}
+function aiLaunch(i){
+  const m=AI.msgs[i]; if (!m || !m.lanc) return;
+  if (!S.accounts.length){ toast('Cadastre suas contas em Bancos primeiro'); return; }
+  const def = S.accounts.find(a=>a.kind==='checking') || S.accounts[0];
+  const raw = m.lanc.map(x=>{ const a=aiAcc(x)||def, d=aiDate(x.data), out=x.tipo!=='entrada', v=r2(+x.valor), n=+x.parcelas>=2 && a.kind==='card' ? Math.min(48,Math.round(+x.parcelas)) : null;
+    const per = n ? r2(v/n) : v;
+    return {accId:a.id, date:d, desc:String(x.descricao||'Lançamento pelo assistente').slice(0,80), amount:out?-per:per, kind:out?'out':'in', key:'chat:'+a.id+'|'+d+'|'+v.toFixed(2)+'|'+String(x.descricao||''), cat:CATS[x.categoria]?x.categoria:null, parcK:n?1:null, parcN:n};
+  });
+  m.launched=true; close();
+  setTimeout(()=>{
+    IM={accId:raw[0].accId, rows:[], file:'Assistente · '+raw.length+' '+(raw.length===1?'lançamento':'lançamentos'), raw, of:true, meta:null, saldo:null};
+    $('#i-acc').innerHTML = S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join(''); $('#i-acc').value=raw[0].accId;
+    $('#i-preview').innerHTML=''; $('#m-import').hidden=false; buildRows(raw);
+  }, 120);
 }
 function openAI(){ close(); setTimeout(()=>{ $('#m-ai').hidden=false; renderAI(); if (!isMobile()) $('#ai-q').focus(); }, 60); }
 // Na demonstração (prévia) a pergunta vai para a página de fora; no app, para a função "assistant" do Supabase.
@@ -4493,7 +4540,7 @@ function aiDemoAsk(payload){ return new Promise((res,rej)=>{ if (window.parent==
 async function askAI(q){
   q=String(q||'').trim(); if (!q || AI.busy) return;
   AI.msgs.push({role:'user', content:q}); AI.busy=true; $('#ai-q').value=''; renderAI();
-  const payload={system:AI_SYSTEM, context:aiContext(), messages:AI.msgs.slice(-8)};
+  const payload={system:AI_SYSTEM, context:aiContext(), messages:AI.msgs.slice(-8).map(m=>({role:m.role, content:m.content}))};
   let text;
   try {
     if (USER && USER.provider==='cloud' && sb){
@@ -4505,7 +4552,9 @@ async function askAI(q){
   } catch(e){
     const m=String(e && (e.message||e)); text = /timeout|546|502|504|read_failed/.test(m) ? (/read_failed/.test(m) ? 'A IA não conseguiu responder agora. Tente de novo em instantes.' : 'A IA demorou demais para responder. Tente de novo.') : /rate|429/.test(m) ? 'Muitas perguntas seguidas. Espere um minutinho e tente de novo.' : /forbidden|403/.test(m) ? 'O assistente está disponível só na conta da dona do app.' : /not_configured|409/.test(m) ? 'Falta a chave do Gemini no Supabase.' : 'Não consegui responder agora. Tente de novo em instantes.';
   }
-  AI.msgs.push({role:'assistant', content:text}); AI.busy=false; renderAI();
+  let lanc=null; const mt=String(text||'').match(/```\s*lancar\s*([\s\S]*?)```/i);
+  if (mt){ try { const arr=JSON.parse(mt[1].trim()); if (Array.isArray(arr)) lanc=arr.filter(x=>x && +x.valor>0).slice(0,60); } catch(e) {} text=String(text).replace(mt[0],'').trim(); }
+  AI.msgs.push({role:'assistant', content:text||'Separei os lançamentos abaixo.', lanc:lanc&&lanc.length?lanc:null}); AI.busy=false; renderAI();
 }
 $('#btn-ai').onclick=openAI;
 $('#ai-form').addEventListener('submit', ev=>{ ev.preventDefault(); askAI($('#ai-q').value); });
