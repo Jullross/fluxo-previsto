@@ -3818,10 +3818,19 @@ async function readPdfAI(files){
     const d=data.data||{}, a=accById(IM.accId);
     IM.meta={fechamento:d.fechamento||null, vencimento:d.vencimento||null, total:d.total!=null?+d.total:null, banco:d.banco||'',
       saldo: d.saldo && isFinite(+d.saldo.valor) ? {value:r2(+d.saldo.valor), date:/^\d{4}-\d{2}-\d{2}/.test(d.saldo.data||'')?String(d.saldo.data).slice(0,10):null} : null};
-    // fatura de cartão: aproveita fechamento e vencimento lidos do PDF quando o cartão ainda não tem
+    // fatura de cartão: fechamento e vencimento do documento só valem se fizerem sentido juntos
+    // (vencimento depois da última compra; fechamento de 3 a 15 dias antes do vencimento). Uma data solta,
+    // como a de emissão de um "extrato em aberto", não muda mais o fechamento do cartão.
     if (a && a.kind==='card'){
-      const cd=d.fechamento?+String(d.fechamento).slice(8,10):null, dd=d.vencimento?+String(d.vencimento).slice(8,10):null;
-      if (cd) a.closeDay=cd; if (dd) a.dueDay=dd; // o documento do banco manda
+      const iso=x=>/^\d{4}-\d{2}-\d{2}/.test(String(x||''))?String(x).slice(0,10):null, dt=x=>new Date(x+'T12:00:00');
+      const outs=(d.transacoes||[]).filter(t=>t.tipo!=='entrada' && iso(t.data)).map(t=>iso(t.data)).sort(), lastBuy=outs[outs.length-1]||null;
+      let ven=iso(d.vencimento), fec=iso(d.fechamento);
+      if (ven && lastBuy && (ven<lastBuy || (dt(ven)-dt(lastBuy))/864e5>45)) ven=null;
+      if (fec && (!ven || fec>=ven || (dt(ven)-dt(fec))/864e5>15 || (dt(ven)-dt(fec))/864e5<3)) fec=null;
+      // sem vencimento no documento (extrato em aberto): tudo vai para a fatura que fecha depois da última compra
+      if (!ven && lastBuy){ const due=cardFat(a, lastBuy, null); if (due){ ven=due.m+'-'+pad(due.day); IM.meta.vencInferido=true; } }
+      IM.meta.vencimento=ven; IM.meta.fechamento=fec;
+      if (fec) a.closeDay=+fec.slice(8,10); if (ven && iso(d.vencimento)) a.dueDay=+ven.slice(8,10); // o documento do banco manda
     }
     const raw=(d.transacoes||[]).filter(t=>/^\d{4}-\d{2}-\d{2}/.test(String(t.data||''))).map(t=>{
       const v=Math.abs(+t.valor||0), out=t.tipo!=='entrada';
