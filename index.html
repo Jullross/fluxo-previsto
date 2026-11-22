@@ -2075,6 +2075,9 @@ function computeAlerts(){
       else if (d>7) out.push({a, level:d>15?'high':'mid', title:`Faz ${d} dias que você não extrai o extrato do ${a.name}`, text:'Suba o arquivo para conciliar seu saldo real com o previsto.', ok:'Marcar como conferido', short:`Extrato ${a.name} há ${d} dias sem importar`});
     }
   }
+  { const np=((S.settings.of||{}).pending||[]).length;
+    if (np) out.push({a:{id:'__of', name:'Open Finance', color:'var(--accent)'}, ofp:true, level:'mid', title:`${np} ${np===1?'transação':'transações'} do Open Finance para revisar`,
+      text:'Parecem já estar lançadas. Confira se é a mesma coisa (mescla) ou se é um lançamento novo.', short:`Open Finance: ${np} para revisar`}); }
   const bc=bankCheck();
   if (bc && bc.fresh && bc.diff!=null && Math.abs(bc.diff)>=1)
     out.push({a:{id:'__check', name:'Saldo', color:'var(--warn)'}, check:true, level:Math.abs(bc.diff)>=50?'high':'mid', title:`O app está ${fmt(Math.abs(bc.diff))} ${bc.diff>0?'abaixo':'acima'} dos seus bancos`,
@@ -2090,7 +2093,7 @@ function alertsHTML(list){
     <div class="alert ${x.level}">
       <span class="ic">${ICON_BELL}</span>
       <div class="txt"><div style="font-weight:600;display:flex;align-items:center;gap:7px"><i class="dot" style="background:${x.a.color}"></i>${esc(x.title)}</div><div class="sub" style="font-size:13px">${esc(x.text)}</div></div>
-      <div class="flex gap-2 flex-wrap">${x.check?`<button type="button" class="btn btn-sm btn-primary" data-check-open>Conferir</button>`:`<button type="button" class="btn btn-sm btn-primary" data-aimp="${x.a.id}">Importar arquivo</button><button type="button" class="btn btn-sm" data-aok="${x.a.id}">${x.ok}</button>`}</div>
+      <div class="flex gap-2 flex-wrap">${x.ofp?`<button type="button" class="btn btn-sm btn-primary" data-ofp-open>Revisar</button>`:x.check?`<button type="button" class="btn btn-sm btn-primary" data-check-open>Conferir</button>`:`<button type="button" class="btn btn-sm btn-primary" data-aimp="${x.a.id}">Importar arquivo</button><button type="button" class="btn btn-sm" data-aok="${x.a.id}">${x.ok}</button>`}</div>
     </div>`).join('')}</div>`;
 }
 function renderAlerts(){
@@ -2103,7 +2106,7 @@ function renderAlerts(){
     box.innerHTML = `<div class="alert-line ${list.some(x=>x.level==='high')?'high':''}">
       <span class="ic">${ICON_BELL}</span>
       <button type="button" class="t" data-alerts-open>${list.length===1?esc(list[0].short||list[0].title):list.length+' pendências: '+esc(names.join(' · '))}</button>
-      ${list.length===1?(list[0].check?`<button type="button" class="btn btn-sm btn-primary" data-check-open>Conferir</button>`:`<button type="button" class="btn btn-sm btn-primary" data-aimp="${list[0].a.id}">Importar</button>`):'<button type="button" class="btn btn-sm" data-alerts-open>Ver</button>'}
+      ${list.length===1?(list[0].ofp?`<button type="button" class="btn btn-sm btn-primary" data-ofp-open>Revisar</button>`:list[0].check?`<button type="button" class="btn btn-sm btn-primary" data-check-open>Conferir</button>`:`<button type="button" class="btn btn-sm btn-primary" data-aimp="${list[0].a.id}">Importar</button>`):'<button type="button" class="btn btn-sm" data-alerts-open>Ver</button>'}
       <button type="button" class="btn btn-sm btn-ghost x" data-alerts-hide aria-label="Dispensar até amanhã" title="Dispensar até amanhã">${ic('x',14)}</button></div>`;
   }
   if (!$('#m-alerts').hidden) $('#alerts-body').innerHTML = alertsHTML(list);
@@ -2111,6 +2114,7 @@ function renderAlerts(){
 }
 function openAlerts(){ $('#alerts-body').innerHTML = alertsHTML(computeAlerts()); bindAlertBtns(); $('#m-alerts').hidden=false; }
 function bindAlertBtns(){
+  $$('[data-ofp-open]').forEach(b=>b.onclick=reviewOFPending);
   $$('[data-aimp]').forEach(b=>b.onclick=()=>{ close(); openImport(b.dataset.aimp); const f=$('#i-file'); try { f.click(); } catch(e) {} });
   $$('[data-aok]').forEach(b=>b.onclick=()=>{ const a=accById(b.dataset.aok); if(!a) return; if (a.kind==='card') a.reviewed[CUR]=true; else a.lastSync=TODAY_ISO; commit(); toast(a.name+' marcado como conferido'); });
   $$('[data-open-banks]').forEach(b=>b.onclick=()=>{ close(); openBanks(); });
@@ -3752,8 +3756,8 @@ function renderPreview(){
   { const on=$('#i-saldo-on'), v=$('#i-saldo-v'); if (on){ on.onchange=()=>{ IM.saldoOn=on.checked; }; v.oninput=()=>{ IM.saldoV=parseMoney(v.value); if (!on.checked){ on.checked=true; IM.saldoOn=true; } }; } }
   updateImpactUI(false);
 }
-function doImport(){
-  let created=0, matched=0, fats=0, xfers=0;
+function doImport(opt){
+  opt=opt||{}; let created=0, matched=0, fats=0, xfers=0;
   // linhas marcadas como "Mesclar com o existente": não viram lançamento novo; o existente passa a contar como pago
   for (const r of IM.rows.filter(x=>x.xknown && !x.include)){ if (r.done) S.status[r.xknown.id+'|'+r.m]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; }
   for (const r of IM.rows.filter(x=>x.similar && x.decision==='merge')){ if (r.done) S.status[r.similar.key]=true; (S.imported=S.imported||{})[r.importKey]=1; matched++; } const touched=new Set(IM.rows.map(r=>r.accId));
@@ -3789,11 +3793,13 @@ function doImport(){
   }
   for (const id of touched){ const a=accById(id); if (!a) continue; if (a.kind==='card') a.reviewed[CUR]=true; a.lastSync=TODAY_ISO; }
   if (IM.of){ S.settings.of = {...(S.settings.of||{}), lastSync: TODAY_ISO}; }
+  if (IM.pendingReview && S.settings.of){ const done=new Set(IM.rows.map(r=>r.importKey)); S.settings.of.pending=(S.settings.of.pending||[]).filter(x=>!done.has(x.key)); }
   { const a0=accById(IM.accId); if (IM.saldo && a0 && a0.kind==='checking' && isFinite(+IM.saldo.value)) a0.bank={v:r2(+IM.saldo.value), at:IM.saldo.date||TODAY_ISO, src:'arquivo'}; }
   const others0 = checkingAccs().filter(a=>a.id!==IM.accId && a.bank && isFinite(+a.bank.v)).reduce((s,a)=>s+(+a.bank.v),0);
   const saldoHoje = IM.saldoOn && IM.saldo ? (isFinite(IM.saldoV)&&IM.saldoV!=null ? IM.saldoV : r2(IM.saldo.value+others0)) : null;
   commit();
   if (saldoHoje!=null) setTodayBalance(saldoHoje);
+  if (opt.silent) return {created, matched, fats, xfers};
   close(); toast(`${created} novos, ${matched} conciliados com o previsto`+(fats?`, ${fats} ${fats===1?'baixa':'baixas'} de fatura`:'')+(xfers?`, ${xfers} ${xfers===1?'transferência':'transferências'}`:'')+(saldoHoje!=null?` · saldo de hoje: ${fmt(saldoHoje)}`:''));
 }
 
@@ -3932,9 +3938,12 @@ function openOF(){
       <label class="field"><span>De</span><input class="inp" type="date" id="of-from" value="${ofDefaultFrom()}"></label>
       <label class="field"><span>Até</span><input class="inp" type="date" id="of-to" value="${TODAY_ISO}"></label>
     </div>
+    <label class="switch"><input type="checkbox" id="of-auto" ${(S.settings.of||{}).auto===false?'':'checked'}><span></span>Sincronizar sozinho uma vez por dia, ao abrir o app</label>
+    <div class="sub" style="margin-top:-4px">${(S.settings.of||{}).lastAuto?`Última sincronização automática: ${(S.settings.of.lastAuto).split('-').reverse().join('/')}. `:''}O que é certo entra sozinho; o que parece já lançado fica no sino para você revisar. Contas novas do banco você liga aqui.</div>
     <div class="flex justify-end"><button class="btn btn-primary" id="of-fetch">${ic('sync')} Buscar transações</button></div>
     <div id="of-out"></div>`;
   $('#of-fetch').onclick=fetchOF;
+  $('#of-auto').onchange=ev=>{ S.settings.of={...(S.settings.of||{}), auto:ev.target.checked}; commit(); toast(ev.target.checked?'Sincronização automática ligada':'Sincronização automática desligada'); };
   $('#m-of').hidden=false;
 }
 async function fetchOF(){
@@ -3969,6 +3978,65 @@ function renderOFMap(){
     </div>`;
   $('#of-review').onclick=reviewOF;
 }
+// Transações da Pluggy viram linhas da revisão (só das contas do banco já ligadas a uma conta do app)
+function ofRaw(d, links){
+  const billDue={}; for (const b of (d.bills||[])) if (b && b.id && b.dueDate) billDue[b.id]=String(b.dueDate).slice(0,10);
+  const raw=[];
+  for (const t of d.transactions){
+    const to=links[t.accountId]; if (!to || to==='skip' || !accById(to)) continue;
+    const dt=new Date(t.date); const date=isNaN(dt)?String(t.date).slice(0,10):isoOf(dt);
+    const cc=t.ccm||{}, pd=cc.purchaseDate?isoOf(new Date(cc.purchaseDate)):null;
+    raw.push({accId:to, date:(pd&&/^\d{4}-/.test(pd))?pd:date, desc:t.description, amount:Math.abs(t.amount)*(t.type==='DEBIT'?-1:1), kind:t.type==='DEBIT'?'out':'in', key:'pluggy:'+t.id, pending:t.status==='PENDING',
+      billDue: cc.billId ? billDue[cc.billId]||null : null, parcK: cc.installmentNumber||null, parcN: cc.totalInstallments||null});
+  }
+  return raw;
+}
+/* Sincronização automática: uma vez por dia, ao abrir o app, busca as transações e aplica sozinha o que é certo
+   (concilia o previsto, lança o novo, junta transferências, atualiza o saldo de cada banco). O que tem dúvida
+   ("parece já lançado") fica no sino para a pessoa revisar. Contas novas do banco nunca são criadas sozinhas. */
+let OF_AUTO_BUSY=false;
+async function autoOF(force){
+  if (OF_AUTO_BUSY || !OF.enabled || !OF.configured || !DATA_READY || !USER || USER.provider!=='cloud') return;
+  const of=S.settings.of||{}, links=of.links||{};
+  if (of.auto===false && !force) return;
+  if (!force && of.lastAuto===TODAY_ISO) return;
+  if (!Object.values(links).some(v=>v && v!=='skip')) return; // nunca ligou as contas: a primeira vez é manual
+  if ([...$$('.overlay')].some(o=>!o.hidden)) return; // não atrapalha uma janela aberta
+  OF_AUTO_BUSY=true;
+  try {
+    let d; try { d=await OF.call({action:'sync', from:ofDefaultFrom(), to:TODAY_ISO}); } catch(e){ return; }
+    S.settings.of={...(S.settings.of||{}), lastAuto:TODAY_ISO};
+    for (const a of d.accounts){ const v=links[a.id], acc=v && v!=='skip' ? accById(v) : null;
+      if (acc && acc.kind==='checking' && isFinite(+a.balance)) acc.bank={v:r2(+a.balance), at:TODAY_ISO, src:'of'};
+      if (acc && acc.kind==='card'){ if (!acc.closeDay && a.closeDate) acc.closeDay=+String(a.closeDate).slice(8,10); if (!acc.dueDay && a.dueDate) acc.dueDay=+String(a.dueDate).slice(8,10); } }
+    const novas=d.accounts.filter(a=>!links[a.id]).length;
+    const raw=ofRaw(d, links);
+    if ([...$$('.overlay')].some(o=>!o.hidden)){ save(); return; }
+    if (!raw.length){ commit(); return; }
+    IM={accId:raw[0].accId, rows:[], file:'Open Finance automático', raw, of:true, meta:null, saldo:null, auto:true};
+    buildRows(raw);
+    // em dúvida: fica para revisar (não importa, não mescla)
+    const doubt=IM.rows.filter(r=>r.similar);
+    for (const r of doubt){ r.include=false; r.decision=null; }
+    const keep=new Set(doubt.map(r=>r.importKey));
+    const pend=(S.settings.of.pending||[]).filter(x=>!(S.imported||{})[x.key] && !keep.has(x.key));
+    S.settings.of.pending = pend.concat(raw.filter(x=>keep.has(x.key) || keep.has(x.accId+'|'+x.date+'|'+Math.abs(x.amount).toFixed(2)+'|'+x.desc)));
+    const st=doImport({silent:true});
+    const parts=[]; if (st.created) parts.push(st.created+(st.created===1?' nova':' novas')); if (st.matched) parts.push(st.matched+(st.matched===1?' conciliada':' conciliadas'));
+    if (st.xfers) parts.push(st.xfers+(st.xfers===1?' transferência':' transferências')); if (st.fats) parts.push(st.fats+(st.fats===1?' baixa de fatura':' baixas de fatura'));
+    const np=S.settings.of.pending.length;
+    if (parts.length || np || novas) toast('Open Finance: '+(parts.length?parts.join(', '):'nada novo')+(np?` · ${np} para revisar no sino`:'')+(novas?` · ${novas} ${novas===1?'conta nova':'contas novas'} no banco (ligue em Mais → Open Finance)`:''));
+  } finally { OF_AUTO_BUSY=false; }
+}
+function reviewOFPending(){
+  const raw=(S.settings.of&&S.settings.of.pending)||[]; if (!raw.length) return;
+  close();
+  setTimeout(()=>{
+    IM={accId:raw[0].accId, rows:[], file:'Open Finance · para revisar', raw, of:true, meta:null, saldo:null, pendingReview:true};
+    $('#i-acc').innerHTML = S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join(''); $('#i-acc').value=raw[0].accId;
+    $('#i-preview').innerHTML=''; $('#m-import').hidden=false; buildRows(raw);
+  }, 120);
+}
 function reviewOF(){
   const d=OF.data; S.settings.of = S.settings.of || {}; const links = S.settings.of.links = S.settings.of.links || {};
   const sel={}; $$('[data-oflink]').forEach(s=>sel[s.dataset.oflink]=s.value);
@@ -3987,15 +4055,7 @@ function reviewOF(){
     if (acc && acc.kind==='card'){ if (!acc.closeDay && a.closeDate) acc.closeDay=+String(a.closeDate).slice(8,10); if (!acc.dueDay && a.dueDate) acc.dueDay=+String(a.dueDate).slice(8,10); }
   }
   save();
-  const billDue={}; for (const b of (d.bills||[])) if (b && b.id && b.dueDate) billDue[b.id]=String(b.dueDate).slice(0,10);
-  const raw=[];
-  for (const t of d.transactions){
-    const to=links[t.accountId]; if (!to || to==='skip' || !accById(to)) continue;
-    const dt=new Date(t.date); const date=isNaN(dt)?String(t.date).slice(0,10):isoOf(dt);
-    const cc=t.ccm||{}, pd=cc.purchaseDate?isoOf(new Date(cc.purchaseDate)):null;
-    raw.push({accId:to, date:(pd&&/^\d{4}-/.test(pd))?pd:date, desc:t.description, amount:Math.abs(t.amount)*(t.type==='DEBIT'?-1:1), kind:t.type==='DEBIT'?'out':'in', key:'pluggy:'+t.id, pending:t.status==='PENDING',
-      billDue: cc.billId ? billDue[cc.billId]||null : null, parcK: cc.installmentNumber||null, parcN: cc.totalInstallments||null});
-  }
+  const raw=ofRaw(d, links);
   close();
   const first=raw[0] ? raw[0].accId : (S.accounts[0]&&S.accounts[0].id);
   IM={accId:first, rows:[], file:'Open Finance · '+d.from.split('-').reverse().join('/')+' a '+d.to.split('-').reverse().join('/'), raw, of:true};
@@ -4437,7 +4497,7 @@ async function startApp(user, fresh){
   sel=CUR; selDay=TODAY;
   document.body.classList.remove('locked'); authMsg('');
   renderAccount(); render(); window.scrollTo(0,0);
-  if (user.provider==='cloud'){ Sync.set('syncing'); await Sync.pull(); DATA_READY=true; render(); Live.start(user); OF.check(); PDFI.check(); } else Sync.set(user.provider==='demo'?'local':'local');
+  if (user.provider==='cloud'){ Sync.set('syncing'); await Sync.pull(); DATA_READY=true; render(); Live.start(user); OF.check().then(()=>autoOF()); PDFI.check(); } else Sync.set(user.provider==='demo'?'local':'local');
   if (fresh && user.provider!=='demo') setTimeout(()=>{ openSettings(); toast('Bem-vinda(o)! Comece pelo saldo de hoje e pelo mês de partida.'); }, 300);
 }
 async function logout(){
@@ -4715,6 +4775,8 @@ function monthPicker(inp){
 }
 ['#f-start','#f-end','#s-base'].forEach(id=>{ const el=$(id); if (el) monthPicker(el); });
 
+// app que fica aberto de um dia para o outro: sincroniza quando volta para a tela
+document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') setTimeout(()=>autoOF(), 1500); });
 /* ---------- PWA: service worker e instalação ---------- */
 let deferredPrompt=null;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);

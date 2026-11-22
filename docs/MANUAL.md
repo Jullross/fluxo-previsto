@@ -88,7 +88,7 @@ Abas de Lançamentos, Calendário, Dívidas e Desafio no topo. Abaixo, o painel 
 
 ## 8. Open Finance
 
-Mais → Open Finance (só para a dona do app) sincroniza as contas e os cartões conectados no Meu Pluggy. A revisão é a mesma da importação: as compras de cartão vão para a fatura certa, entram pendentes e as parcelas são projetadas e conciliadas nos meses seguintes.
+Mais → Open Finance (só para a dona do app) sincroniza as contas e os cartões conectados no Meu Pluggy. Depois da primeira vez (em que você liga cada conta do banco a uma conta do app), a sincronização é automática: uma vez por dia, ao abrir o app, o que é certo entra sozinho e o que parece já lançado fica no sino ("Revisar"). Dá para desligar nessa mesma tela. Contas novas no banco você liga manualmente. A revisão é a mesma da importação: as compras de cartão vão para a fatura certa, entram pendentes e as parcelas são projetadas e conciliadas nos meses seguintes.
 
 ## 9. Assistente
 
