@@ -984,6 +984,15 @@ body:not(.locked) #auth{display:none!important}
 .mpk-g button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .mpk-f{display:flex;justify-content:space-between}
 .mpk-f button{border:0;background:none;color:var(--accent);font-weight:600;font-size:13px;padding:4px 2px}
+
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px}
+.plan{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.plan.on{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.plan-n{font-weight:700;font-size:15px}
+.plan-v{font-size:17px;font-weight:600;white-space:nowrap}
+.plan-fit{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500}
+.plan-fit i{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:0 0 auto}
+.plan-fit.go i{background:var(--go)} .plan-fit.care i{background:var(--care)} .plan-fit.stop i{background:var(--stop)}
 /* ===== Impressão / salvar como PDF pelo navegador ===== */
 @media print{
   :root{--bg:#fff;--surface:#fff;--surface-2:#f2f3f6;--line:#d9dde6;--fg:#141922;--muted:#566074;--faint:#949cad;--accent:#0d9488;--accent-ink:#fff;--cal-bal:#0369a1;--go-text:#047857;--stop-text:#dc2626;--care-text:#b45309;color-scheme:light}
@@ -1113,6 +1122,7 @@ body:not(.locked) #auth{display:none!important}
         <button role="tab" aria-selected="false" data-tab="cal"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg><span>Calendário</span></button>
         <button role="tab" aria-selected="false" data-tab="dividas"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg><span>Dívidas &amp; Conselheiro</span></button>
         <button role="tab" aria-selected="false" data-tab="desafio"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="1.5"/></svg><span>Desafio do Mês</span></button>
+        <button role="tab" aria-selected="false" data-tab="planos"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>Planos</span></button>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <span class="sub" id="tab-note"></span>
@@ -1122,7 +1132,7 @@ body:not(.locked) #auth{display:none!important}
     </div>
 
     <div class="seg seg-lg mob-only" id="mais-seg" role="tablist" aria-label="Mais">
-      <button type="button" data-mtab="dividas">Dívidas &amp; Conselheiro</button><button type="button" data-mtab="desafio">Desafio do Mês</button>
+      <button type="button" data-mtab="dividas">Dívidas &amp; Conselheiro</button><button type="button" data-mtab="desafio">Desafio do Mês</button><button type="button" data-mtab="planos">Planos</button>
     </div>
     <div class="tab-body" id="tab-body"><div class="tab-inner">
     <div id="view-lista" class="grid gap-4 md:grid-cols-2">
@@ -1163,6 +1173,7 @@ body:not(.locked) #auth{display:none!important}
 
     <div id="view-dividas" class="flex flex-col gap-3" hidden></div>
     <div id="view-desafio" class="flex flex-col gap-3" hidden></div>
+    <div id="view-planos" class="flex flex-col gap-3" hidden></div>
     </div></div>
   </section>
 
@@ -1578,6 +1589,35 @@ body:not(.locked) #auth{display:none!important}
   </div>
 </div>
 
+<!-- Modal: plano -->
+<div class="overlay" id="m-plan" hidden>
+  <form class="sheet flex flex-col gap-4" id="pl-form">
+    <div class="flex items-center justify-between">
+      <h3 class="disp text-xl font-bold" id="pl-title">Novo plano</h3>
+      <button type="button" class="btn btn-ghost" data-close aria-label="Fechar"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <label class="field"><span>O quê</span><input class="inp" id="pl-name" autocomplete="off" placeholder="Ex.: Aniversário da Ana, Viagem para Búzios"></label>
+    <label class="field"><span>Motivo (opcional)</span><input class="inp" id="pl-reason" autocomplete="off" placeholder="Ex.: presente e jantar"></label>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="field"><span>Valor estimado</span><input class="inp num" id="pl-amount" inputmode="numeric" data-money placeholder="0,00"></label>
+      <label class="field"><span>Classificação</span><select class="inp" id="pl-cat"></select></label>
+    </div>
+    <div class="field"><span>Quando</span><div class="seg seg-lg" id="pl-when"><button type="button" data-v="date">Num dia</button><button type="button" data-v="range">Num período</button><button type="button" data-v="none">Sem data</button></div></div>
+    <div class="grid grid-cols-2 gap-3" id="pl-wrap-date">
+      <label class="field"><span id="pl-date-label">Dia</span><input class="inp num" id="pl-day" inputmode="numeric" placeholder="18"></label>
+      <label class="field"><span>Mês</span><input class="inp" id="pl-month" type="month"></label>
+    </div>
+    <div class="grid grid-cols-2 gap-3" id="pl-wrap-to" hidden>
+      <label class="field"><span>Até o dia</span><input class="inp num" id="pl-day2" inputmode="numeric" placeholder="20"></label>
+      <label class="field"><span>Mês</span><input class="inp" id="pl-month2" type="month"></label>
+    </div>
+    <div id="pl-wrap-count"><label class="switch"><input type="checkbox" id="pl-count"><span></span>Contar na previsão (desconta da sobra no dia)</label>
+      <div class="sub" style="margin-top:4px">Desligado, o plano fica só na lista: o app mostra se cabe e quanto guardar, sem mexer no saldo.</div></div>
+    <div class="hint c-out" id="pl-err" hidden></div>
+    <div class="flex justify-end gap-2"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
+  </form>
+</div>
+
 <!-- Modal: conta -->
 <div class="overlay" id="m-account" hidden>
   <div class="sheet flex flex-col gap-4">
@@ -1609,7 +1649,7 @@ body:not(.locked) #auth{display:none!important}
 
 <script>
 (() => {
-const ICONS = {"x": "<path d=\"M18 6 6 18M6 6l12 12\"/>", "info": "<circle cx=\"12\" cy=\"12\" r=\"9.5\"/><path d=\"M12 16v-4.5M12 8h.01\"/>", "phone": "<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"2.5\"/><path d=\"M12 7v7M9 11l3 3 3-3\"/>", "zap": "<path d=\"M13 2 4 14h7l-1 8 9-12h-7z\"/>", "target": "<circle cx=\"12\" cy=\"12\" r=\"9.5\"/><circle cx=\"12\" cy=\"12\" r=\"5.5\"/><circle cx=\"12\" cy=\"12\" r=\"1.5\"/>", "umbrella": "<path d=\"M22 12a10 10 0 0 0-20 0z\"/><path d=\"M12 12v7a2 2 0 0 0 4 0M12 2v1\"/>", "pencil": "<path d=\"M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z\"/>", "sparkles": "<path d=\"M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z\"/><path d=\"M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z\"/>", "card": "<rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2.5\"/><path d=\"M2.5 10h19M6.5 15h4\"/>", "bank": "<path d=\"M3 21h18M5 21V10M19 21V10M9.5 21V10M14.5 21V10M12 3 3 8h18z\"/>", "sync": "<path d=\"M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4\"/>", "download": "<path d=\"M12 3v12M7 10l5 5 5-5M4 20h16\"/>", "bell": "<path d=\"M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9\"/><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\"/>", "sliders": "<path d=\"M4 7h10M18 7h2M4 17h4M12 17h8\"/><circle cx=\"16\" cy=\"7\" r=\"2\"/><circle cx=\"10\" cy=\"17\" r=\"2\"/>", "user": "<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>", "calendar": "<rect x=\"3\" y=\"4.5\" width=\"18\" height=\"16.5\" rx=\"2.5\"/><path d=\"M3 9.5h18M8 2.5v4M16 2.5v4\"/>", "chevl": "<path d=\"m15 18-6-6 6-6\"/>", "chevr": "<path d=\"m9 18 6-6-6-6\"/>", "chevl2": "<path d=\"m11 17-5-5 5-5M18 17l-5-5 5-5\"/>", "chevr2": "<path d=\"m6 17 5-5-5-5M13 17l5-5-5-5\"/>", "leaf": "<path d=\"M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z\"/><path d=\"M2 21c0-3 1.9-5.4 5.1-6\"/>", "flame": "<path d=\"M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z\"/>", "rocket": "<path d=\"M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z\"/><path d=\"m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z\"/><path d=\"M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5\"/>", "gem": "<path d=\"M6 3h12l4 6-10 13L2 9z\"/><path d=\"M2 9h20M12 22 8 9l4-6 4 6z\"/>", "check": "<path d=\"M20 6 9 17l-5-5\"/>", "arrow": "<path d=\"M5 12h14M13 6l6 6-6 6\"/>", "cloud": "<path d=\"M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9z\"/>", "device": "<rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2.5\"/><path d=\"M12 18h.01\"/>", "loader": "<path d=\"M21 12a9 9 0 1 1-6.2-8.6\"/>", "alert": "<path d=\"m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3\"/><path d=\"M12 9v4M12 17h.01\"/>", "flask": "<path d=\"M9 3h6M10 3v6.5L4.5 19A1.5 1.5 0 0 0 5.8 21h12.4a1.5 1.5 0 0 0 1.3-2L14 9.5V3\"/><path d=\"M7 15h10\"/>", "list": "<path d=\"M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01\"/>", "plus": "<path d=\"M12 5v14M5 12h14\"/>"};
+const ICONS = {"flag": "<path d=\"M5 21V4M5 4h11l-2 4 2 4H5\"/>", "x": "<path d=\"M18 6 6 18M6 6l12 12\"/>", "info": "<circle cx=\"12\" cy=\"12\" r=\"9.5\"/><path d=\"M12 16v-4.5M12 8h.01\"/>", "phone": "<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"2.5\"/><path d=\"M12 7v7M9 11l3 3 3-3\"/>", "zap": "<path d=\"M13 2 4 14h7l-1 8 9-12h-7z\"/>", "target": "<circle cx=\"12\" cy=\"12\" r=\"9.5\"/><circle cx=\"12\" cy=\"12\" r=\"5.5\"/><circle cx=\"12\" cy=\"12\" r=\"1.5\"/>", "umbrella": "<path d=\"M22 12a10 10 0 0 0-20 0z\"/><path d=\"M12 12v7a2 2 0 0 0 4 0M12 2v1\"/>", "pencil": "<path d=\"M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z\"/>", "sparkles": "<path d=\"M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z\"/><path d=\"M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z\"/>", "card": "<rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2.5\"/><path d=\"M2.5 10h19M6.5 15h4\"/>", "bank": "<path d=\"M3 21h18M5 21V10M19 21V10M9.5 21V10M14.5 21V10M12 3 3 8h18z\"/>", "sync": "<path d=\"M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4\"/>", "download": "<path d=\"M12 3v12M7 10l5 5 5-5M4 20h16\"/>", "bell": "<path d=\"M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9\"/><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\"/>", "sliders": "<path d=\"M4 7h10M18 7h2M4 17h4M12 17h8\"/><circle cx=\"16\" cy=\"7\" r=\"2\"/><circle cx=\"10\" cy=\"17\" r=\"2\"/>", "user": "<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>", "calendar": "<rect x=\"3\" y=\"4.5\" width=\"18\" height=\"16.5\" rx=\"2.5\"/><path d=\"M3 9.5h18M8 2.5v4M16 2.5v4\"/>", "chevl": "<path d=\"m15 18-6-6 6-6\"/>", "chevr": "<path d=\"m9 18 6-6-6-6\"/>", "chevl2": "<path d=\"m11 17-5-5 5-5M18 17l-5-5 5-5\"/>", "chevr2": "<path d=\"m6 17 5-5-5-5M13 17l5-5-5-5\"/>", "leaf": "<path d=\"M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z\"/><path d=\"M2 21c0-3 1.9-5.4 5.1-6\"/>", "flame": "<path d=\"M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z\"/>", "rocket": "<path d=\"M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z\"/><path d=\"m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z\"/><path d=\"M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5\"/>", "gem": "<path d=\"M6 3h12l4 6-10 13L2 9z\"/><path d=\"M2 9h20M12 22 8 9l4-6 4 6z\"/>", "check": "<path d=\"M20 6 9 17l-5-5\"/>", "arrow": "<path d=\"M5 12h14M13 6l6 6-6 6\"/>", "cloud": "<path d=\"M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9z\"/>", "device": "<rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2.5\"/><path d=\"M12 18h.01\"/>", "loader": "<path d=\"M21 12a9 9 0 1 1-6.2-8.6\"/>", "alert": "<path d=\"m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3\"/><path d=\"M12 9v4M12 17h.01\"/>", "flask": "<path d=\"M9 3h6M10 3v6.5L4.5 19A1.5 1.5 0 0 0 5.8 21h12.4a1.5 1.5 0 0 0 1.3-2L14 9.5V3\"/><path d=\"M7 15h10\"/>", "list": "<path d=\"M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01\"/>", "plus": "<path d=\"M12 5v14M5 12h14\"/>"};
 const ic = (n, size=16) => `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
 const KEY = 'fluxo-previsto-v1';
 const MN = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -1785,7 +1825,7 @@ function debtToEntry(d){
   return {...base, type:'single', amount:amt, start:m, day: m===CUR?TODAY:10};
 }
 const debtEntries = (exceptId) => (S.debts||[]).filter(d=>d.simulate && d.id!==exceptId).map(debtToEntry);
-const allEntries = () => [...S.entries, ...debtEntries(), ...vaultEntries(), ...fatEntries()];
+const allEntries = () => [...S.entries, ...debtEntries(), ...vaultEntries(), ...fatEntries(), ...planEntries()];
 
 /* ---------- Faturas de cartão: baixa, pagamento parcial e saldo em aberto ---------- */
 // S.faturas["<cartão>|AAAA-MM"] = {paid, juros, from, src}. Sem registro, a fatura segue o pago/pendente de cada compra.
@@ -2662,7 +2702,7 @@ function renderLista(r){
 $$('#lf-seg [data-lf]').forEach(b=>b.onclick=()=>{ LF=b.dataset.lf; pref('lf',LF); render(); animateIn($('#view-lista')); });
 function renderTabs(r){
   $$('[data-tab]').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.tab===tab)));
-  $('#view-lista').hidden = tab!=='lista'; $('#view-cal').hidden = tab!=='cal'; $('#view-dividas').hidden = tab!=='dividas'; $('#view-desafio').hidden = tab!=='desafio';
+  $('#view-lista').hidden = tab!=='lista'; $('#view-cal').hidden = tab!=='cal'; $('#view-dividas').hidden = tab!=='dividas'; $('#view-desafio').hidden = tab!=='desafio'; $('#view-planos').hidden = tab!=='planos';
   if (shownTab!==null && shownTab!==tab) requestAnimationFrame(()=>animateIn($('#view-'+tab)));
   shownTab = tab;
   $('#tab-note').textContent = {cal:'Toque num dia para ver os lançamentos; toque duas vezes para lançar nele', lista:'Toque num lançamento para editar', dividas:'Dívidas não afetam o fluxo até você ligar a simulação', desafio:'O desafio só sai do saldo depois que você aceita'}[tab];
@@ -2671,6 +2711,7 @@ function renderTabs(r){
   if (tab==='cal') renderCal(r);
   if (tab==='dividas') renderDebts();
   if (tab==='desafio') renderChallenge();
+  if (tab==='planos') renderPlans();
 }
 const qeOk = o => !o.e.virtual && !o.e.vault && !o.e.reimbursementFor && !String(o.e.id).startsWith('debt_') && !String(o.e.id).startsWith('chal_');
 function quickEdit(el, kind, id, m){
@@ -2797,6 +2838,8 @@ function renderCal(r){
   const PRE = r.m < effBase(), HI=new Array(dim+1).fill(0), HO=new Array(dim+1).fill(0);
   for (const o of (r.hist||[])) if (o.day>=1 && o.day<=dim){ if (o.e.kind==='in') HI[o.day]+=o.amount; else HO[o.day]+=o.amount; }
   let h = WD.map(w=>`<div class="wd">${w}</div>`).join('');
+  // planos com data neste mês (ligados ou não à previsão): bandeirinha no dia e linha no dia aberto
+  const PLD={}; for (const p of plans()) if (!p.done){ const a1=planDate(p), b1=p.when==='range'?(p.to||a1):a1; if (!a1) continue; for (let d=1; d<=dim; d++){ const iso=r.m+'-'+pad(d); if (iso>=a1 && iso<=b1) (PLD[d]=PLD[d]||[]).push(p.name); } }
   for (let i=0;i<first;i++) h+='<div></div>';
   for (let d=1; d<=dim; d++){
     const isToday = r.m===CUR && d===TODAY, past = r.m<CUR || (r.m===CUR && d<TODAY), b=r.days[d], fi=r.dayIn[d], fo=r.dayOut[d];
@@ -2806,7 +2849,7 @@ function renderCal(r){
     const hnet = r2(HI[d]-HO[d]);
     const hol = holidayOn(r.m, d), moved = r.o.some(o=>o.day===d && o.adj && o.adj.moved), hasX = XS.some(o=>o.day===d);
     h += `<button class="day ${state} ${hol?'hol':''} ${isToday?'today':''} ${selDay===d?'sel':''} ${past?'past':''}" data-day="${d}" aria-label="Dia ${d}${hol?', feriado: '+esc(hol.name):''}: saldo ${fmt(b)}${delta?', variação '+fmt(delta):''}">
-      <span class="top"><span class="dn">${d}</span><span class="icons">${hol?`<span class="only-sm" title="Feriado">${ic('umbrella',11)}</span>`:''}${moved?`<span title="Lançamento com data ajustada por fim de semana ou feriado">${ic('zap',11)}</span>`:''}${vault?`<span title="Depósito do desafio">${ic('gem',11)}</span>`:''}${hasX?`<span title="Transferência entre suas contas" style="color:var(--cal-bal);font-size:11px;line-height:1">⇄</span>`:''}${fi?'<i class="dot" style="background:var(--in);width:6px;height:6px"></i>':''}${fo?'<i class="dot" style="background:var(--out);width:6px;height:6px"></i>':''}</span></span>
+      <span class="top"><span class="dn">${d}</span><span class="icons">${hol?`<span class="only-sm" title="Feriado">${ic('umbrella',11)}</span>`:''}${moved?`<span title="Lançamento com data ajustada por fim de semana ou feriado">${ic('zap',11)}</span>`:''}${vault?`<span title="Depósito do desafio">${ic('gem',11)}</span>`:''}${PLD[d]?`<span title="Plano: ${esc(PLD[d].join(', '))}" class="c-acc">${ic('flag',11)}</span>`:''}${hasX?`<span title="Transferência entre suas contas" style="color:var(--cal-bal);font-size:11px;line-height:1">⇄</span>`:''}${fi?'<i class="dot" style="background:var(--in);width:6px;height:6px"></i>':''}${fo?'<i class="dot" style="background:var(--out);width:6px;height:6px"></i>':''}</span></span>
       ${hol?`<span class="hol-pill only-lg" title="${esc(hol.name)} · sem expediente bancário">${ic('umbrella',11)} ${esc(hol.name)}</span>`:''}
       <span class="flows only-lg">${fi?`<span class="num c-in">+${fmtInt(fi)}</span>`:''}${fo-vault>0.005?`<span class="num c-out">−${fmtInt(fo-vault)}</span>`:''}${vault?`<span class="num vault-line">${ic('gem',10)} −${fmtInt(vault)} pro cofre</span>`:''}${HI[d]?`<span class="num c-in hist-f" title="Histórico: não altera o saldo">+${fmtInt(HI[d])} hist.</span>`:''}${HO[d]?`<span class="num c-out hist-f" title="Histórico: não altera o saldo">−${fmtInt(HO[d])} hist.</span>`:''}</span>
       ${PRE ? `<span class="bal num pre-bal"><span class="only-lg">${HI[d]||HO[d]?'histórico':'—'}</span><span class="only-sm ${hnet>0?'c-in':hnet<0?'c-out':''}">${HI[d]||HO[d]?(hnet>=0?'+':'−')+fmtC(Math.abs(hnet)):'—'}</span></span>` : `<span class="bal num"><span class="only-lg">R$ ${fmtInt(b)}</span><span class="only-sm">${fmtC(b)}</span></span>`}
@@ -2834,8 +2877,10 @@ function renderCal(r){
       <div class="flex gap-2"><button class="btn" data-newday="in">+ Entrada neste dia</button><button class="btn btn-primary" data-newday="out">+ Gasto neste dia</button></div>
     </div>
     ${items.length || !XS.some(o=>o.day===selDay) ? list(items,'Nenhum lançamento neste dia.') : ''}${XS.filter(o=>o.day===selDay).map(xferItemHTML).join('')}
+    ${(PLD[selDay]||[]).length?`<div class="px-4 py-3 sub" style="border-top:1px solid var(--line)">${ic('flag',13)} Plano: ${esc(PLD[selDay].join(', '))} <button type="button" class="link-btn" data-go-plans style="color:var(--accent);font-weight:600">ver planos</button></div>`:''}
     <div style="border-top:1px solid var(--line)">${PRE?preNote:summary}</div>`;
   dp.querySelectorAll('[data-newday]').forEach(b=>b.onclick=()=>openEntry(null, r.m, b.dataset.newday, selDay));
+  dp.querySelectorAll('[data-go-plans]').forEach(b=>b.onclick=()=>goTab('planos'));
 }
 function bindItems(){
   $$('[data-fat-toggle]').forEach(h=>{ const go=()=>{ const k=h.dataset.fatToggle; if (FAT_OPEN.has(k)) FAT_OPEN.delete(k); else FAT_OPEN.add(k); render(); }; h.onclick=go; h.onkeydown=ev=>{ if (ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); go(); } }; });
@@ -4534,7 +4579,7 @@ function openAccount(){
 /* ---------- Celular: 5 telas (Início, Lançamentos, Gastei, Calendário, Mais) com gesto de deslizar ---------- */
 const SCREENS=['home','lista','gastei','cal','mais'], NAV_OF={home:'home', lista:'lista', gastei:'zap', cal:'cal', mais:'more'};
 const isMobile = () => window.matchMedia ? matchMedia('(max-width:767px)').matches : false;
-let screen='home', maisTab = ['dividas','desafio'].includes(pref('maisTab')) ? pref('maisTab') : 'desafio';
+let screen='home', maisTab = ['dividas','desafio','planos'].includes(pref('maisTab')) ? pref('maisTab') : 'desafio';
 function navOn(k){ $$('.bottom-nav [data-nav]').forEach(b=>{ const on=b.dataset.nav===k; b.classList.toggle('on', on); b.setAttribute('aria-current', on?'page':'false'); }); }
 function syncMaisSeg(){ $$('#mais-seg [data-mtab]').forEach(b=>{ const on=b.dataset.mtab===tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); }); }
 function setScreen(s, opts={}){
@@ -4552,7 +4597,7 @@ function setScreen(s, opts={}){
   if (s==='gastei' && opts.focus) setTimeout(()=>$('#sim-amount').focus({preventScroll:true}), 260);
 }
 function goTab(t){
-  if (isMobile()){ if (t==='dividas'||t==='desafio'){ maisTab=t; pref('maisTab',t); setScreen('mais'); } else setScreen(t); return; }
+  if (isMobile()){ if (t==='dividas'||t==='desafio'||t==='planos'){ maisTab=t; pref('maisTab',t); setScreen('mais'); } else setScreen(t); return; }
   tab=t; pref('tab',t); render(); const el=$('#tabs-sec'); if (el) el.scrollIntoView({block:'start', behavior:'smooth'});
 }
 $$('.bottom-nav [data-nav]').forEach(b=>b.onclick=()=>{
@@ -4628,7 +4673,7 @@ function aiContext(){
     pode_gastar_por_dia: h?r2(h.teto):null, menor_saldo_proximos_12_meses: h?{valor:h.min, em:h.at}:null,
     contas: S.accounts.filter(a=>a.kind!=='card').map(a=>({conta:a.name, saldo_no_banco:a.bank?a.bank.v:null, em:a.bank?a.bank.at:null})),
     contas_ids: S.accounts.map(a=>({id:a.id, nome:a.name, tipo:a.kind==='card'?'cartão':'conta'})),
-    meses: months, cartoes: cards, fixos, parcelados, gastos_avulsos_ja_feitos_este_mes: gastosMes,
+    meses: months, cartoes: cards, fixos, parcelados, planos: plans().filter(p=>!p.done).map(p=>({o_que:p.name, motivo:p.reason||null, valor:p.amount, quando:planWhen(p), conta_na_previsao:!!p.count})), gastos_avulsos_ja_feitos_este_mes: gastosMes,
     observacao: 'A projeção só inclui o que está lançado. Gastos que variam (transporte, mercado, Pix avulsos) só entram se estiverem lançados; use os gastos avulsos deste mês para estimar o ritmo.'
   };
 }
@@ -4780,6 +4825,105 @@ function monthPicker(inp){
 
 // app que fica aberto de um dia para o outro: sincroniza quando volta para a tela
 document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') setTimeout(()=>autoOF(), 1500); });
+/* ---------- Planos: compras e gastos que você pretende ter (aniversário, viagem), com data, período ou sem data.
+   Não mexem no saldo, a não ser que você ligue "Contar na previsão". Mostram se cabe e quanto guardar até lá. ---------- */
+let PL={id:null, when:'date', armed:null}, planArmed=null;
+const plans = () => (S.plans=S.plans||[]);
+function planDate(p){ return p.when==='date' ? p.date : p.when==='range' ? p.from : null; }
+function planEntry(p){ const d=planDate(p); if (!d || !(p.amount>0)) return null;
+  return {id:'plan_'+p.id, kind:'out', type:'single', name:'Plano: '+p.name, start:d.slice(0,7), day:+d.slice(8,10), amount:p.amount, cat:p.cat||'estilo', virtual:true, planId:p.id, method:'Planejado'}; }
+const planEntries = () => plans().filter(p=>p.count && !p.done).map(planEntry).filter(Boolean);
+function planWhen(p){
+  const dl=iso=>`${+iso.slice(8,10)} ${MN[+iso.slice(5,7)-1]}${iso.slice(0,4)!==CUR.slice(0,4)?'/'+iso.slice(2,4):''}`;
+  if (p.when==='date' && p.date) return dl(p.date);
+  if (p.when==='range' && p.from) return p.to && p.to!==p.from ? `de ${dl(p.from)} a ${dl(p.to)}` : dl(p.from);
+  return 'sem data';
+}
+// Cabe? Testa o plano na previsão (sem contar duas vezes se ele já está ligado) contra a margem de segurança.
+function planFit(p){
+  const H=health(P), cushion = H ? Math.round(H.avgIn*0.15) : 0;
+  const base = allEntries().filter(e=>e.planId!==p.id);
+  const test = (iso)=>{ const e={...planEntry({...p, when:'date', date:iso}), id:'plan_test'}; const Px=project([...base, e]); return lowFrom(Px, iso.slice(0,7)<CUR?CUR:iso.slice(0,7), iso.slice(0,7)<=CUR?TODAY:+iso.slice(8,10)); };
+  const d=planDate(p);
+  if (!(p.amount>0)) return {st:'none', txt:'Sem valor estimado'};
+  if (d){
+    if (d < TODAY_ISO) return {st:'past', txt:'A data já passou'};
+    const lo=test(d); if (!lo) return {st:'none', txt:''};
+    const months=Math.max(1, diffM(CUR, d.slice(0,7)) + (+d.slice(8,10) > TODAY ? 0 : 0));
+    const save = months>=2 ? r2(p.amount/months) : null;
+    if (lo.min>=cushion) return {st:'ok', txt:'Cabe com folga', save, lo};
+    if (lo.min>=0) return {st:'tight', txt:`Cabe, mas aperta: ${dLabel(lo.at.m,lo.at.d)} fica em ${fmt(lo.min)}`, save, lo};
+    return {st:'no', txt:`Não cabe: ${dLabel(lo.at.m,lo.at.d)} fica em ${fmt(lo.min)}`, save, lo};
+  }
+  // sem data: primeiro mês em que cabe com folga (testa no dia 10 de cada mês)
+  for (let i=1;i<=12;i++){ const m=addM(CUR,i), lo=test(m+'-10'); if (lo && lo.min>=cushion) return {st:'ok', txt:`Cabe com folga a partir de ${mLabel(m)}`, first:m}; }
+  return {st:'no', txt:'Ainda não cabe nos próximos 12 meses'};
+}
+const PLAN_ST={ok:['c-in','go'], tight:['c-warn','care'], no:['c-out','stop'], past:['sub',''], none:['sub','']};
+function renderPlans(){
+  const box=$('#view-planos'); if (!box) return;
+  const list=plans().filter(p=>!p.done).sort((a,b)=>(planDate(a)||'9999')<(planDate(b)||'9999')?-1:1), done=plans().filter(p=>p.done);
+  const next3=list.filter(p=>{ const d=planDate(p); return d && d.slice(0,7)<=addM(CUR,2) && d>=TODAY_ISO; }).reduce((s,p)=>s+(+p.amount||0),0);
+  box.innerHTML = `
+    <div class="panel p-4 flex flex-col gap-3">
+      <div class="flex items-start justify-between gap-3 flex-wrap"><div><div class="label">Planos e intenções</div>
+        <div class="sub">O que você pretende gastar e ainda não é certeza: aniversário, viagem, presente. Não mexe no saldo, a não ser que você ligue "Contar na previsão".</div></div>
+        <button type="button" class="btn btn-primary" id="plan-new">${ic('plus',15)} Plano</button></div>
+      ${list.length?`<div class="sub">Nos próximos 3 meses: <b class="num" style="color:var(--fg)">${fmt(next3)}</b> em planos com data.</div>`:''}
+    </div>
+    ${list.length ? `<div class="plan-grid">${list.map(p=>{ const f=planFit(p), c=PLAN_ST[f.st]||PLAN_ST.none, armed=planArmed===p.id;
+      return `<div class="panel plan ${p.count?'on':''}">
+        <div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="plan-n">${esc(p.name)}</div><div class="sub">${esc(planWhen(p))}${p.reason?' · '+esc(p.reason):''}</div></div>
+          <div class="num plan-v">${p.amount>0?fmt(p.amount):'—'}</div></div>
+        <div class="plan-fit ${c[1]}"><i></i><span class="${c[0]}">${esc(f.txt)}</span></div>
+        ${f.save && f.st!=='past'?`<div class="sub">Guardando <b class="num" style="color:var(--fg)">${fmt(f.save)}</b> por mês até lá, você chega no valor.</div>`:''}
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          ${planDate(p)?`<label class="switch"><input type="checkbox" data-plan-count="${p.id}" ${p.count?'checked':''}><span></span>Contar na previsão</label>`:'<span class="sub">Sem data: não entra na previsão</span>'}
+          <div class="flex gap-2 flex-wrap"><button type="button" class="btn btn-sm" data-plan-edit="${p.id}">Editar</button>${planDate(p)?`<button type="button" class="btn btn-sm" data-plan-done="${p.id}">Virou gasto</button>`:''}<button type="button" class="btn btn-sm btn-danger" data-plan-del="${p.id}">${armed?'Confirmar':'Excluir'}</button></div>
+        </div></div>`; }).join('')}</div>`
+      : `<div class="panel px-4 py-6 text-center sub">Nenhum plano ainda. Ex.: "Aniversário da Ana · 18 dez · R$ 150" ou "Viagem · de 10 a 20 jan · R$ 1.200".</div>`}
+    ${done.length?`<div class="sub">Já viraram gasto: ${done.map(p=>esc(p.name)).join(', ')}.</div>`:''}`;
+  $('#plan-new').onclick=()=>openPlan(null);
+  box.querySelectorAll('[data-plan-edit]').forEach(b=>b.onclick=()=>openPlan(b.dataset.planEdit));
+  box.querySelectorAll('[data-plan-count]').forEach(i=>i.onchange=()=>{ const p=plans().find(x=>x.id===i.dataset.planCount); if (!p) return; p.count=i.checked; commit(); toast(i.checked?'Plano entrou na previsão':'Plano saiu da previsão'); });
+  box.querySelectorAll('[data-plan-del]').forEach(b=>b.onclick=()=>{ const id=b.dataset.planDel; if (planArmed!==id){ planArmed=id; renderPlans(); return; } planArmed=null; S.plans=plans().filter(x=>x.id!==id); commit(); toast('Plano excluído'); });
+  box.querySelectorAll('[data-plan-done]').forEach(b=>b.onclick=()=>{ const p=plans().find(x=>x.id===b.dataset.planDone); if (!p) return; const d=planDate(p);
+    p.done=true; p.count=false; commit(); openEntry(null, d.slice(0,7), 'out', +d.slice(8,10)); setTimeout(()=>{ $('#f-name').value=p.name; $('#f-amount').value=(+p.amount).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); $('#f-cat').value=p.cat||'estilo'; F.catTouched=true; syncForm(); }, 60); });
+}
+function openPlan(id){
+  const p = id ? plans().find(x=>x.id===id) : null;
+  PL={id, when: p?p.when:'date'};
+  $('#pl-title').textContent = p?'Editar plano':'Novo plano';
+  $('#pl-name').value=p?p.name:''; $('#pl-reason').value=p?(p.reason||''):'';
+  $('#pl-amount').value=p&&p.amount?(+p.amount).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+  const d=p?planDate(p):null, to=p&&p.when==='range'?p.to:null;
+  $('#pl-day').value=d?+d.slice(8,10):''; $('#pl-month').value=d?d.slice(0,7):CUR;
+  $('#pl-day2').value=to?+to.slice(8,10):''; $('#pl-month2').value=to?to.slice(0,7):(d?d.slice(0,7):CUR);
+  $('#pl-cat').value=p?(p.cat||'estilo'):'estilo'; $('#pl-count').checked=p?!!p.count:false; $('#pl-err').hidden=true;
+  syncPlan(); $('#m-plan').hidden=false; setTimeout(()=>{ if (!p) $('#pl-name').focus(); },30);
+}
+function syncPlan(){
+  $$('#pl-when [data-v]').forEach(b=>b.classList.toggle('on', b.dataset.v===PL.when));
+  $('#pl-wrap-date').hidden = PL.when==='none'; $('#pl-wrap-to').hidden = PL.when!=='range';
+  $('#pl-date-label').textContent = PL.when==='range'?'De':'Dia'; $('#pl-wrap-count').hidden = PL.when==='none';
+}
+$$('#pl-when [data-v]').forEach(b=>b.onclick=()=>{ PL.when=b.dataset.v; syncPlan(); });
+const plIso=(dEl,mEl)=>{ const m=mEl.value, d=Math.min(daysIn(m||CUR), Math.max(1, parseInt(dEl.value)||1)); return /^\d{4}-\d{2}$/.test(m) ? m+'-'+pad(d) : null; };
+$('#pl-form').addEventListener('submit', ev=>{
+  ev.preventDefault();
+  const name=$('#pl-name').value.trim(), amount=parseMoney($('#pl-amount').value), err=$('#pl-err');
+  if (!name){ err.textContent='Diga o que é o plano.'; err.hidden=false; return; }
+  const p = PL.id ? plans().find(x=>x.id===PL.id) : {id:uid()};
+  Object.assign(p, {name, reason:$('#pl-reason').value.trim(), amount: amount>0?amount:0, when:PL.when, cat:$('#pl-cat').value, count: PL.when!=='none' && $('#pl-count').checked});
+  if (PL.when==='date'){ if (!$('#pl-day').value){ err.textContent='Informe o dia.'; err.hidden=false; return; } p.date=plIso($('#pl-day'),$('#pl-month')); delete p.from; delete p.to; }
+  else if (PL.when==='range'){ if (!$('#pl-day').value){ err.textContent='Informe o dia em que começa.'; err.hidden=false; return; } p.from=plIso($('#pl-day'),$('#pl-month')); p.to=$('#pl-day2').value?plIso($('#pl-day2'),$('#pl-month2')):p.from; if (p.to<p.from) p.to=p.from; delete p.date; }
+  else { delete p.date; delete p.from; delete p.to; }
+  if (!PL.id) plans().push(p);
+  commit(); close(); toast(PL.id?'Plano atualizado':'Plano criado');
+});
+$('#pl-cat').innerHTML = catOptions();
+
+monthPicker($('#pl-month')); monthPicker($('#pl-month2'));
 /* ---------- PWA: service worker e instalação ---------- */
 let deferredPrompt=null;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);

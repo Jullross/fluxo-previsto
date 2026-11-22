@@ -2,6 +2,7 @@
 
 | Versão | Data | O que mudou |
 | --- | --- | --- |
+| v44 | 22/11/2026 | Planos: compras e gastos que você pretende ter (num dia, num período ou sem data), com valor estimado e motivo; mostram se cabem com folga, se apertam ou não cabem, quanto guardar por mês até lá e, sem data, a partir de quando cabem. Só entram na previsão se você ligar "Contar na previsão"; "Virou gasto" abre o lançamento preenchido; bandeirinha no calendário; o assistente conhece os planos |
 | v43 | 22/11/2026 | Desafio do mês: a folga de cada mês é medida daquele mês em diante; um aperto de hoje (antes do salário) não zera mais as sugestões dos meses seguintes |
 | v42 | 22/11/2026 | Open Finance automático: uma vez por dia, ao abrir o app (ou ao voltar para ele), busca as transações das contas já ligadas, aplica sozinho o que é certo (concilia o previsto, lança o novo, junta transferências, baixa de fatura, saldo de cada banco) e deixa no sino o que parece já lançado para revisar. Liga e desliga em Mais → Open Finance |
 | v41 | 22/11/2026 | Assistente cria recorrentes pelo chat ("aluguel de 900 todo dia 5", "salário no último dia útil"): mostra dia, regra e desde quando, avisa quando já existe um parecido e não repete; os lançamentos únicos do mesmo pedido seguem para a revisão |

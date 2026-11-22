@@ -90,6 +90,10 @@ Abas de Lançamentos, Calendário, Dívidas e Desafio no topo. Abaixo, o painel 
 
 Mais → Open Finance (só para a dona do app) sincroniza as contas e os cartões conectados no Meu Pluggy. Depois da primeira vez (em que você liga cada conta do banco a uma conta do app), a sincronização é automática: uma vez por dia, ao abrir o app, o que é certo entra sozinho e o que parece já lançado fica no sino ("Revisar"). Dá para desligar nessa mesma tela. Contas novas no banco você liga manualmente. A revisão é a mesma da importação: as compras de cartão vão para a fatura certa, entram pendentes e as parcelas são projetadas e conciliadas nos meses seguintes.
 
+## 8b. Planos
+
+Em Mais → Planos (no computador, aba Planos) você anota o que pretende gastar e ainda não é certeza: "Aniversário da Ana · 18 dez · R$ 150", "Viagem · de 10 a 20 jan · R$ 1.200" ou "Notebook · sem data". Cada plano mostra se cabe com folga, se aperta ou se não cabe, quanto guardar por mês até a data e, se não tiver data, a partir de que mês cabe. Ele só desconta da sobra se você ligar "Contar na previsão". Quando acontecer, toque em "Virou gasto" para lançar. Os planos com data aparecem com uma bandeirinha no calendário.
+
 ## 9. Assistente
 
 O ícone ✦ no topo (no celular, também em Mais → Assistente) abre um chat. Pergunte em texto livre ("em quantas vezes parcelo R$ 1.900?", "em que mês fico mais apertada?") e ele responde com as contas feitas com os números do app: saldo de hoje, próximos meses, faturas, fixos e parcelados. Ele só sabe o que está lançado; gastos que variam e não foram lançados entram como estimativa. Funciona só na conta da dona do app e usa a mesma chave do Gemini da leitura de PDF.
