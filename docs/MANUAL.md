@@ -94,7 +94,7 @@ Mais → Open Finance (só para a dona do app) sincroniza as contas e os cartõe
 
 O ícone ✦ no topo (no celular, também em Mais → Assistente) abre um chat. Pergunte em texto livre ("em quantas vezes parcelo R$ 1.900?", "em que mês fico mais apertada?") e ele responde com as contas feitas com os números do app: saldo de hoje, próximos meses, faturas, fixos e parcelados. Ele só sabe o que está lançado; gastos que variam e não foram lançados entram como estimativa. Funciona só na conta da dona do app e usa a mesma chave do Gemini da leitura de PDF.
 
-**Lançar pelo chat:** peça "lança 45 de mercado ontem no Swile", "recebi 300 no PicPay hoje" ou cole a lista de um extrato. O assistente separa os lançamentos e mostra "Revisar e lançar": abre a mesma revisão da importação, onde você confere conta, data e categoria, e o que já estava lançado não duplica. Compra parcelada no cartão: diga o total e as vezes ("tênis 300 em 3x no Bradesco"). Recorrentes você marca na edição do lançamento.
+**Lançar pelo chat:** peça "lança 45 de mercado ontem no Swile", "recebi 300 no PicPay hoje" ou cole a lista de um extrato. O assistente separa os lançamentos e mostra "Revisar e lançar": abre a mesma revisão da importação, onde você confere conta, data e categoria, e o que já estava lançado não duplica. Compra parcelada no cartão: diga o total e as vezes ("tênis 300 em 3x no Bradesco"). Recorrentes também: "aluguel de 900 todo dia 5 no Nubank", "salário de 2200 no último dia útil". O assistente mostra o dia e desde quando, avisa se já existe um parecido e cria ao tocar em "Criar recorrente".
 
 ## 10. Quando algo não bate
 

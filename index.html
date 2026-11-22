@@ -4578,7 +4578,7 @@ LANÇAR PELO CHAT: quando a pessoa pedir para lançar, registrar ou anotar gasto
 \`\`\`lancar
 [{"tipo":"saida","descricao":"Super Kibarato","valor":623.63,"data":"2026-11-14","conta_id":"<id de contas_ids>","categoria":"essencial","parcelas":null}]
 \`\`\`
-Regras do bloco: JSON válido; "tipo" é "saida" ou "entrada"; "valor" positivo com ponto decimal; "data" AAAA-MM-DD (sem data = hoje; "ontem" = hoje menos 1); "conta_id" é o id da conta ou cartão em contas_ids que combina com o que a pessoa disse (Swile/VR, Nubank, PicPay, cartão Bradesco...) ou null se não der para saber; "categoria" essencial|estilo|futuro|metas ou null; "parcelas" só para compra parcelada no cartão (número total de parcelas; nesse caso "valor" é o total da compra). Linhas de saldo nunca entram. Não diga que já lançou: o app mostra a lista para a pessoa revisar e confirmar. Lançamentos recorrentes (todo mês) não entram pelo bloco: diga para a pessoa marcar como recorrente na edição.`;
+Regras do bloco: JSON válido; "tipo" é "saida" ou "entrada"; "valor" positivo com ponto decimal; "data" AAAA-MM-DD (sem data = hoje; "ontem" = hoje menos 1); "conta_id" é o id da conta ou cartão em contas_ids que combina com o que a pessoa disse (Swile/VR, Nubank, PicPay, cartão Bradesco...) ou null se não der para saber; "categoria" essencial|estilo|futuro|metas ou null; "parcelas" só para compra parcelada no cartão (número total de parcelas; nesse caso "valor" é o total da compra). Linhas de saldo nunca entram. Não diga que já lançou: o app mostra a lista para a pessoa revisar e confirmar. Recorrentes (todo mês: salário, aluguel, assinatura, mesada, academia) também entram no bloco, com "recorrente":true, "dia" (dia do mês, 1 a 31) e "regra": "fixo", "adiar" (próximo dia útil), "antecipar" (dia útil anterior), "quinto_dia_util" ou "ultimo_dia_util"; "data" é o primeiro mês em que ele acontece e "fim" (AAAA-MM, opcional) o último mês. Antes de propor um recorrente, olhe a lista "fixos": se já existe um parecido, diga isso em vez de lançar de novo.`;
 function aiFmt(t){
   const lines=esc(String(t||'')).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').split(/\n/);
   let h='', inList=false;
@@ -4601,16 +4601,39 @@ function aiDate(d){ return /^\d{4}-\d{2}-\d{2}$/.test(String(d||'')) ? String(d)
 function aiLancHTML(m,i){
   const its=m.lanc, tot=r2(its.reduce((a,x)=>a+(x.tipo==='entrada'?0:+x.valor),0)), noAcc=its.filter(x=>!aiAcc(x)).length;
   return `<div class="ai-lanc">${its.slice(0,12).map(x=>{ const a=aiAcc(x), d=aiDate(x.data);
-      return `<div class="ai-li"><span class="nm">${esc(x.descricao||'(sem descrição)')}<span class="sub">${d.slice(8,10)}/${d.slice(5,7)} · ${a?esc(a.name):'<b class="c-warn">conta?</b>'}${+x.parcelas>=2?' · '+x.parcelas+'x de '+fmt(r2(+x.valor/ +x.parcelas)):''}</span></span><span class="num ${x.tipo==='entrada'?'c-in':''}">${x.tipo==='entrada'?'+':'−'}${fmt(+x.valor)}</span></div>`; }).join('')}
+      const ex = x.recorrente ? aiRecExisting(x) : null;
+      const when = x.recorrente ? `todo mês${x.regra==='ultimo_dia_util'?', último dia útil':x.regra==='quinto_dia_util'?', 5º dia útil':', dia '+(Math.round(+x.dia)||+d.slice(8,10))} · desde ${mLabel(d.slice(0,7))}${x.fim?' até '+mLabel(String(x.fim)):''}` : `${d.slice(8,10)}/${d.slice(5,7)}`;
+      return `<div class="ai-li"><span class="nm">${esc(x.descricao||'(sem descrição)')}${x.recorrente?' <span class="chip">recorrente</span>':''}<span class="sub">${when} · ${a?esc(a.name):'<b class="c-warn">conta?</b>'}${+x.parcelas>=2?' · '+x.parcelas+'x de '+fmt(r2(+x.valor/ +x.parcelas)):''}${ex?` · <b class="c-warn">já existe “${esc(ex.name)}”, não vou repetir</b>`:''}</span></span><span class="num ${x.tipo==='entrada'?'c-in':''}">${x.tipo==='entrada'?'+':'−'}${fmt(+x.valor)}</span></div>`; }).join('')}
     ${its.length>12?`<div class="sub">e mais ${its.length-12}…</div>`:''}
     <div class="ai-lt"><span class="sub">${its.length} ${its.length===1?'lançamento':'lançamentos'} · saídas ${fmt(tot)}${noAcc?` · ${noAcc} sem conta (você escolhe na revisão)`:''}</span>
-    ${m.launched?'<span class="chip ok">enviado para a revisão</span>':`<button type="button" class="btn btn-sm btn-primary" data-ai-lanc="${i}">Revisar e lançar</button>`}</div></div>`;
+    ${m.launched?`<span class="chip ok">${m.recDone?m.recDone+(m.recDone===1?' recorrente criado':' recorrentes criados'):''}${m.recDone&&its.some(x=>!x.recorrente)?' · ':''}${its.some(x=>!x.recorrente)?'enviado para a revisão':''}${!m.recDone&&!its.some(x=>!x.recorrente)?'nada novo para criar':''}</span>`:`<button type="button" class="btn btn-sm btn-primary" data-ai-lanc="${i}">${its.every(x=>x.recorrente)?(its.length===1?'Criar recorrente':'Criar recorrentes'):its.some(x=>x.recorrente)?'Criar recorrentes e revisar o resto':'Revisar e lançar'}</button>`}</div></div>`;
+}
+// Recorrentes pedidos pelo chat: criados direto (a pessoa confirmou no botão), sem repetir um que já existe com nome parecido
+const AI_RULES={fixo:'fixed', adiar:'fixed-next', antecipar:'fixed-prev', quinto_dia_util:'bd5', ultimo_dia_util:'lastbd'};
+function aiRecExisting(x){ const out=x.tipo!=='entrada'; return S.entries.find(e=>e.type==='recurring' && (!e.end || e.end>=CUR) && e.kind===(out?'out':'in') && nameLike(e.name, x.descricao||'')); }
+function aiCreateRecurring(recs, def){
+  let n=0;
+  for (const x of recs){
+    if (aiRecExisting(x)) continue;
+    const a=aiAcc(x)||def, out=x.tipo!=='entrada', d=aiDate(x.data), start=d.slice(0,7), v=r2(+x.valor);
+    const day=Math.min(31,Math.max(1, Math.round(+x.dia) || +d.slice(8,10) || 1));
+    const e={id:uid(), kind:out?'out':'in', type:'recurring', name:String(x.descricao||'Recorrente').slice(0,80), start, day, end:/^\d{4}-\d{2}$/.test(String(x.fim||''))?String(x.fim):null,
+      changes:[{from:start, amount:v}], dayRule:AI_RULES[x.regra]||(out?'fixed-next':'fixed-prev'), bdN:5, accountId:a?a.id:null};
+    if (out){ e.cat=CATS[x.categoria]?x.categoria:'essencial'; e.method=a&&a.kind==='card'?'Cartão':'Pix'; e.whoUsed='me'; e.whoName=''; }
+    if (a && a.kind==='card' && a.dueDay){ e.day=a.dueDay; e.dayRule='fixed'; }
+    S.entries.push(e); n++;
+  }
+  if (n){ commit(); toast(n===1?'Recorrente criado: aparece todo mês':n+' recorrentes criados'); }
+  return n;
 }
 function aiLaunch(i){
   const m=AI.msgs[i]; if (!m || !m.lanc) return;
   if (!S.accounts.length){ toast('Cadastre suas contas em Bancos primeiro'); return; }
   const def = S.accounts.find(a=>a.kind==='checking') || S.accounts[0];
-  const raw = m.lanc.map(x=>{ const a=aiAcc(x)||def, d=aiDate(x.data), out=x.tipo!=='entrada', v=r2(+x.valor), n=+x.parcelas>=2 && a.kind==='card' ? Math.min(48,Math.round(+x.parcelas)) : null;
+  const recs = m.lanc.filter(x=>x.recorrente), singles = m.lanc.filter(x=>!x.recorrente);
+  if (recs.length){ const n=aiCreateRecurring(recs, def); m.recDone=n; }
+  if (!singles.length){ m.launched=true; renderAI(); return; }
+  const raw = singles.map(x=>{ const a=aiAcc(x)||def, d=aiDate(x.data), out=x.tipo!=='entrada', v=r2(+x.valor), n=+x.parcelas>=2 && a.kind==='card' ? Math.min(48,Math.round(+x.parcelas)) : null;
     const per = n ? r2(v/n) : v;
     return {accId:a.id, date:d, desc:String(x.descricao||'Lançamento pelo assistente').slice(0,80), amount:out?-per:per, kind:out?'out':'in', key:'chat:'+a.id+'|'+d+'|'+v.toFixed(2)+'|'+String(x.descricao||''), cat:CATS[x.categoria]?x.categoria:null, parcK:n?1:null, parcN:n};
   });
