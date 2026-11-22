@@ -954,6 +954,10 @@ body:not(.locked) #auth{display:none!important}
   #i-preview .ikpi b{white-space:nowrap;overflow-wrap:normal;font-size:clamp(15px,4.6vw,19px)}
   #i-preview .ikpi.focus b{font-size:clamp(22px,7vw,28px)}
 }
+
+.day.pre .bal{color:var(--faint)!important;font-weight:600}
+.day.pre .bal .c-in{color:var(--go-text)} .day.pre .bal .c-out{color:var(--stop-text)}
+.day .hist-f{opacity:.75;font-style:italic}
 /* ===== Impressão / salvar como PDF pelo navegador ===== */
 @media print{
   :root{--bg:#fff;--surface:#fff;--surface-2:#f2f3f6;--line:#d9dde6;--fg:#141922;--muted:#566074;--faint:#949cad;--accent:#0d9488;--accent-ink:#fff;--cal-bal:#0369a1;--go-text:#047857;--stop-text:#dc2626;--care-text:#b45309;color-scheme:light}
@@ -2122,7 +2126,7 @@ function paintStripSim(){
   $$('#strip .mchip').forEach(b=>{
     const live=!!SIM_P && (!isMobile() || screen==='home' || screen==='gastei');
     const real=P.find(r=>r.m===b.dataset.m), sim=live && SIM_P.find(r=>r.m===b.dataset.m), v=b.querySelector('.v');
-    if (!real || !v) return;
+    if (!real || !v || b.classList.contains('pre')) return;
     const row = sim || real, diff = !!sim && Math.abs(sim.end-real.end)>=0.005;
     v.textContent = fmtK(row.end); v.classList.toggle('c-out', row.end<0); v.classList.toggle('muted', row.end>=0 && !diff);
     b.classList.toggle('simul', diff);
@@ -2758,20 +2762,24 @@ function renderCal(r){
   let lowD=1, highD=1; for (let d=1; d<=dim; d++){ if (r.days[d]<r.days[lowD]) lowD=d; if (r.days[d]>r.days[highD]) highD=d; }
   const H=health(P), cushion = H ? Math.round(H.avgIn*0.15) : 0;
   const XS = transfersIn(r.m);
+  // Antes do mês de partida não existe saldo: o dia mostra só o histórico (lançamentos importados de meses passados)
+  const PRE = r.m < effBase(), HI=new Array(dim+1).fill(0), HO=new Array(dim+1).fill(0);
+  for (const o of (r.hist||[])) if (o.day>=1 && o.day<=dim){ if (o.e.kind==='in') HI[o.day]+=o.amount; else HO[o.day]+=o.amount; }
   let h = WD.map(w=>`<div class="wd">${w}</div>`).join('');
   for (let i=0;i<first;i++) h+='<div></div>';
   for (let d=1; d<=dim; d++){
     const isToday = r.m===CUR && d===TODAY, past = r.m<CUR || (r.m===CUR && d<TODAY), b=r.days[d], fi=r.dayIn[d], fo=r.dayOut[d];
     const prev = d===1 ? r.start : r.days[d-1], delta = r2(b-prev);
     const vault = r.o.filter(o=>o.day===d && o.e.vault).reduce((s,o)=>s+o.amount,0);
-    const state = b<0 ? 'neg' : b<cushion ? 'lowbal' : (fi>0 && delta>0) ? 'up' : '';
+    const state = PRE ? 'pre' : b<0 ? 'neg' : b<cushion ? 'lowbal' : (fi>0 && delta>0) ? 'up' : '';
+    const hnet = r2(HI[d]-HO[d]);
     const hol = holidayOn(r.m, d), moved = r.o.some(o=>o.day===d && o.adj && o.adj.moved), hasX = XS.some(o=>o.day===d);
     h += `<button class="day ${state} ${hol?'hol':''} ${isToday?'today':''} ${selDay===d?'sel':''} ${past?'past':''}" data-day="${d}" aria-label="Dia ${d}${hol?', feriado: '+esc(hol.name):''}: saldo ${fmt(b)}${delta?', variação '+fmt(delta):''}">
       <span class="top"><span class="dn">${d}</span><span class="icons">${hol?`<span class="only-sm" title="Feriado">${ic('umbrella',11)}</span>`:''}${moved?`<span title="Lançamento com data ajustada por fim de semana ou feriado">${ic('zap',11)}</span>`:''}${vault?`<span title="Depósito do desafio">${ic('gem',11)}</span>`:''}${hasX?`<span title="Transferência entre suas contas" style="color:var(--cal-bal);font-size:11px;line-height:1">⇄</span>`:''}${fi?'<i class="dot" style="background:var(--in);width:6px;height:6px"></i>':''}${fo?'<i class="dot" style="background:var(--out);width:6px;height:6px"></i>':''}</span></span>
       ${hol?`<span class="hol-pill only-lg" title="${esc(hol.name)} · sem expediente bancário">${ic('umbrella',11)} ${esc(hol.name)}</span>`:''}
-      <span class="flows only-lg">${fi?`<span class="num c-in">+${fmtInt(fi)}</span>`:''}${fo-vault>0.005?`<span class="num c-out">−${fmtInt(fo-vault)}</span>`:''}${vault?`<span class="num vault-line">${ic('gem',10)} −${fmtInt(vault)} pro cofre</span>`:''}</span>
-      <span class="bal num"><span class="only-lg">R$ ${fmtInt(b)}</span><span class="only-sm">${fmtC(b)}</span></span>
-      ${Math.abs(delta)>=0.01?`<span class="delta num ${delta>0?'up':'down'}"><span class="only-lg">${delta>0?'+':'−'}${fmtInt(Math.abs(delta))}</span><span class="only-sm">${delta>0?'+':'−'}${fmtC(Math.abs(delta))}</span></span>`:''}
+      <span class="flows only-lg">${fi?`<span class="num c-in">+${fmtInt(fi)}</span>`:''}${fo-vault>0.005?`<span class="num c-out">−${fmtInt(fo-vault)}</span>`:''}${vault?`<span class="num vault-line">${ic('gem',10)} −${fmtInt(vault)} pro cofre</span>`:''}${HI[d]?`<span class="num c-in hist-f" title="Histórico: não altera o saldo">+${fmtInt(HI[d])} hist.</span>`:''}${HO[d]?`<span class="num c-out hist-f" title="Histórico: não altera o saldo">−${fmtInt(HO[d])} hist.</span>`:''}</span>
+      ${PRE ? `<span class="bal num pre-bal"><span class="only-lg">${HI[d]||HO[d]?'histórico':'—'}</span><span class="only-sm ${hnet>0?'c-in':hnet<0?'c-out':''}">${HI[d]||HO[d]?(hnet>=0?'+':'−')+fmtC(Math.abs(hnet)):'—'}</span></span>` : `<span class="bal num"><span class="only-lg">R$ ${fmtInt(b)}</span><span class="only-sm">${fmtC(b)}</span></span>`}
+      ${!PRE && Math.abs(delta)>=0.01?`<span class="delta num ${delta>0?'up':'down'}"><span class="only-lg">${delta>0?'+':'−'}${fmtInt(Math.abs(delta))}</span><span class="only-sm">${delta>0?'+':'−'}${fmtC(Math.abs(delta))}</span></span>`:''}
     </button>`;
   }
   $('#cal').innerHTML = h;
@@ -2786,15 +2794,16 @@ function renderCal(r){
       <span>Conta mais vazia: <b class="num ${r.days[lowD]<0?'c-out':'strong'}">${fmt(r.days[lowD])}</b> no dia ${lowD} (${WD[new Date(y,mo-1,lowD).getDay()]})</span>
       <span>Mais cheia: <b class="num strong">${fmt(r.days[highD])}</b> no dia ${highD} (${WD[new Date(y,mo-1,highD).getDay()]})</span>
       <span class="flex items-center gap-3 flex-wrap"><span class="cal-key up">dia de recebimento</span><span class="cal-key lowbal">abaixo da margem de ${fmt(cushion)}</span><span class="cal-key neg">negativo</span></span></div>`;
-  if (!selDay || selDay>dim){ dp.innerHTML = summary; return; }
-  const items = r.o.filter(o=>o.day===selDay);
+  const preNote = `<div class="px-4 pt-3 pb-3 sub">${mFull(r.m)} é antes do mês de partida (${mLabel(effBase())}): aqui aparecem só os lançamentos importados, como histórico. Eles não mudam o saldo; o dinheiro que entrou ou saiu antes já está no "saldo no início" de ${mLabel(effBase())}.</div>`;
+  if (!selDay || selDay>dim){ dp.innerHTML = PRE ? preNote : summary; return; }
+  const items = r.o.filter(o=>o.day===selDay).concat((r.hist||[]).filter(o=>o.day===selDay));
   dp.innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 pb-3" style="border-bottom:1px solid var(--line)">
       <div><div class="label">${WD[new Date(y,mo-1,selDay).getDay()]}, ${selDay} de ${MFULL[mo-1].toLowerCase()}${holidayOn(r.m,selDay)?` · Feriado: ${esc(holidayOn(r.m,selDay).name)} (sem expediente bancário)`:''}</div>
-        <div class="sub">Saldo no fim do dia: <span class="num ${r.days[selDay]<0?'c-out':'strong'}">${fmt(r.days[selDay])}</span></div></div>
+        <div class="sub">${PRE?'Antes do mês de partida: só histórico, não altera o saldo':`Saldo no fim do dia: <span class="num ${r.days[selDay]<0?'c-out':'strong'}">${fmt(r.days[selDay])}</span>`}</div></div>
       <div class="flex gap-2"><button class="btn" data-newday="in">+ Entrada neste dia</button><button class="btn btn-primary" data-newday="out">+ Gasto neste dia</button></div>
     </div>
     ${items.length || !XS.some(o=>o.day===selDay) ? list(items,'Nenhum lançamento neste dia.') : ''}${XS.filter(o=>o.day===selDay).map(xferItemHTML).join('')}
-    <div style="border-top:1px solid var(--line)">${summary}</div>`;
+    <div style="border-top:1px solid var(--line)">${PRE?preNote:summary}</div>`;
   dp.querySelectorAll('[data-newday]').forEach(b=>b.onclick=()=>openEntry(null, r.m, b.dataset.newday, selDay));
 }
 function bindItems(){
